@@ -37,9 +37,6 @@ while not gameExit:
             if event.key == pygame.K_DOWN:
                 lead_y_change = 10
                 lead_x_change = 0
-        if event.type == pygame.KEYUP: # Use to allow movement while holding key down
-            if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
-                lead_x_change = 0
     
     lead_x += lead_x_change
     lead_y += lead_y_change
