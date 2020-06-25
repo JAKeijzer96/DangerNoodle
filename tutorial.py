@@ -37,6 +37,9 @@ while not gameExit:
             if event.key == pygame.K_DOWN:
                 lead_y_change = 10
                 lead_x_change = 0
+
+    if lead_x >= 800 or lead_x < 0 or lead_y >= 600 or lead_y < 0: # add boundaries
+        gameExit = True
     
     lead_x += lead_x_change
     lead_y += lead_y_change
