@@ -13,18 +13,53 @@ pygame.display.set_caption('Slither')
 
 gameExit = False
 
+lead_x = 300
+lead_y = 300
+
 while not gameExit:
     for event in pygame.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
         if event.type == pygame.QUIT:
             gameExit = True
-        #print(event)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                lead_x -= 10
+            if event.key == pygame.K_RIGHT:
+                lead_x += 10
+            if event.key == pygame.K_UP:
+                lead_y -= 10
+            if event.key == pygame.K_DOWN:
+                lead_y += 10
+        
     gameDisplay.fill(white)
-    pygame.draw.rect(gameDisplay, black, [400,300,10,10]) # parameters: surface, color, [x,y,width,height]
-
-    gameDisplay.fill(red, rect=[200,200,50,50]) # alternative way to draw, can be graphics accellerated
-
-
+    pygame.draw.rect(gameDisplay, black, [lead_x,lead_y,10,10]) # parameters: surface, color, [x,y,width,height]
     pygame.display.update() # update the display
 
 pygame.quit() # uninitializes everything
 quit() # quit the python program
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# gameDisplay.fill(red, rect=[200,200,50,50]) # alternative way to draw, can be graphics accellerated
