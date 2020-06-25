@@ -11,8 +11,10 @@ gameExit = False
 
 while not gameExit:
     for event in pygame.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
-        print(event)
+        if event.type == pygame.QUIT:
+            gameExit = True
+        #print(event)
 
 
 pygame.quit() # uninitializes everything
-#quit() # quit the python program
+quit() # quit the python program
