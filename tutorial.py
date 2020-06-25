@@ -8,7 +8,7 @@ black = (0,0,0)
 red = (255,0,0)
 
 
-gameDisplay = pygame.display.set_mode((800,600)) # returns a surface object with (h,w) hxw pixels
+gameDisplay = pygame.display.set_mode((800,600)) # returns a surface object with (w,h) wxh pixels
 pygame.display.set_caption('Slither')
 
 gameExit = False
@@ -19,6 +19,11 @@ while not gameExit:
             gameExit = True
         #print(event)
     gameDisplay.fill(white)
+    pygame.draw.rect(gameDisplay, black, [400,300,10,10]) # parameters: surface, color, [x,y,width,height]
+
+    gameDisplay.fill(red, rect=[200,200,50,50]) # alternative way to draw, can be graphics accellerated
+
+
     pygame.display.update() # update the display
 
 pygame.quit() # uninitializes everything
