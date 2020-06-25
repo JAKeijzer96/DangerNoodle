@@ -1,5 +1,6 @@
 import pygame
 
+
 pygame.init() # initialize pygame modules. Returns a tuple of (succesful, unsuccesful) initializations
 
 gameDisplay = pygame.display.set_mode((800,600)) # tuple of height x width pixels
