@@ -1,4 +1,5 @@
 import pygame
+import time
 
 
 pygame.init() # initialize pygame modules. Returns a tuple of (succesful, unsuccesful) initializations
@@ -20,9 +21,15 @@ lead_x_change = 0
 lead_y_change = 0
 
 clock = pygame.time.Clock() # pygame clock object used to set fps
-fps = 10
+fps = 15
 
 block_size = 10
+
+font = pygame.font.SysFont(None, 25) # size 25
+
+def message_to_screen(msg, color):
+    screen_text = font.render(msg, True, color) # render message, True (for anti-aliasing), color
+    gameDisplay.blit(screen_text, [display_width//2, display_height//2]) # show screen_text on [coords]
 
 while not gameExit:
     for event in pygame.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
@@ -54,32 +61,8 @@ while not gameExit:
 
     clock.tick(fps) # tick(x) for a game of x frames per second
 
+message_to_screen("You lose", red)
+pygame.display.update()
+time.sleep(2)
 pygame.quit() # uninitializes everything
 quit() # quit the python program
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# gameDisplay.fill(red, rect=[200,200,50,50]) # alternative way to draw, can be graphics accellerated
