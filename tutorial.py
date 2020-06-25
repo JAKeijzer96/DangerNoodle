@@ -15,6 +15,8 @@ gameExit = False
 
 lead_x = 300
 lead_y = 300
+lead_x_change = 0
+lead_y_change = 0
 
 while not gameExit:
     for event in pygame.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
@@ -22,14 +24,17 @@ while not gameExit:
             gameExit = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                lead_x -= 10
+                lead_x_change = -10
             if event.key == pygame.K_RIGHT:
-                lead_x += 10
+                lead_x_change = 10
             if event.key == pygame.K_UP:
-                lead_y -= 10
+                lead_y_change = -10
             if event.key == pygame.K_DOWN:
-                lead_y += 10
-        
+                lead_y_change = 10
+    
+    lead_x += lead_x_change
+    lead_y += lead_y_change
+
     gameDisplay.fill(white)
     pygame.draw.rect(gameDisplay, black, [lead_x,lead_y,10,10]) # parameters: surface, color, [x,y,width,height]
     pygame.display.update() # update the display
