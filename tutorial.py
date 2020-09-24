@@ -17,7 +17,9 @@ pg.display.set_caption('Slither')
 clock = pg.time.Clock() # pg clock object used to set fps
 fps = 15
 
-block_size = 10
+block_size = 20
+apple_thickness = 30
+
 font = pg.font.SysFont(None, 25) # size 25
 
 def snake(block_size, snake_list):
@@ -84,7 +86,6 @@ def game_loop():
         lead_y += lead_y_change
 
         program_surface.fill(white)
-        apple_thickness = 30
         pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, apple_thickness, apple_thickness]) # draw apple
         
         snake_head = []
@@ -104,8 +105,15 @@ def game_loop():
         pg.display.update() # update the display
 
         # Collision for small snake, big apple
-        if lead_x >= rand_apple_x and lead_x <= rand_apple_x + apple_thickness:
-            if lead_y >= rand_apple_y and lead_y <= rand_apple_y + apple_thickness:
+        # if lead_x >= rand_apple_x and lead_x <= rand_apple_x + apple_thickness:
+        #     if lead_y >= rand_apple_y and lead_y <= rand_apple_y + apple_thickness:
+        #         rand_apple_x = round(randint(0, display_width - block_size)) # / 10) * 10 # round to nearest 10
+        #         rand_apple_y = round(randint(0, display_height - block_size)) # / 10) * 10 # round to nearest 10
+        #         snake_length += 1
+
+        # Updated collision for any size snake/apple
+        if (lead_x + block_size > rand_apple_x and lead_y + block_size > rand_apple_y
+            and lead_x < rand_apple_x + apple_thickness and lead_y < rand_apple_y + apple_thickness):
                 rand_apple_x = round(randint(0, display_width - block_size)) # / 10) * 10 # round to nearest 10
                 rand_apple_y = round(randint(0, display_height - block_size)) # / 10) * 10 # round to nearest 10
                 snake_length += 1
