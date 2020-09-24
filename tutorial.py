@@ -44,11 +44,11 @@ def text_objects(text, color):
     text_surface = font.render(text, True, color) # render message, True (for anti-aliasing), color
     return text_surface, text_surface.get_rect()
 
-def message_to_screen(msg, color):
+def message_to_screen(msg, color, y_displace=0):
     # screen_text = font.render(msg, True, color) 
     # program_surface.blit(screen_text, [display_width//2, display_height//2]) 
     text_surface, text_rect = text_objects(msg, color)
-    text_rect.center = (display_width//2, display_height//2)
+    text_rect.center = (display_width//2, display_height//2 + y_displace)
     program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
 def game_loop():
@@ -71,7 +71,8 @@ def game_loop():
     while not program_exit:
         while game_over:
             program_surface.fill(white)
-            message_to_screen("Game over. Press C to play again or Q to quit", red)
+            message_to_screen("Game over", red, -50)
+            message_to_screen("Press C to play again or Q to quit", black, 50)
             pg.display.update()
             for event in pg.event.get():
                 if event.type == pg.QUIT:
