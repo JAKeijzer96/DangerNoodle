@@ -22,11 +22,21 @@ fps = 15
 
 block_size = 20
 apple_thickness = 30
+direction = "down"
 
 font = pg.font.SysFont(None, 25) # size 25
 
 def snake(block_size, snake_list):
-    program_surface.blit(img, (snake_list[-1][0], snake_list[-1][1])) # blit the snake head image
+    if direction == "up":
+        head = img
+    elif direction == "left":
+        head = pg.transform.rotate(img, 90) # rotate counterclockwise
+    elif direction == "down":
+        head = pg.transform.rotate(img, 180)
+    elif direction == "right":
+        head = pg.transform.rotate(img, 270)
+
+    program_surface.blit(head, (snake_list[-1][0], snake_list[-1][1])) # blit the snake head image
     for x_and_y in snake_list[:-1]: # the last element is the head, so dont put a square there
         pg.draw.rect(program_surface, green, [x_and_y[0],x_and_y[1],block_size,block_size]) # parameters: surface, color, [x,y,width,height]
 
@@ -42,13 +52,14 @@ def message_to_screen(msg, color):
     program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
 def game_loop():
+    global direction
     program_exit = False
     game_over = False
 
     lead_x = display_width//2
     lead_y = display_height//2
     lead_x_change = 0
-    lead_y_change = 0
+    lead_y_change = block_size
     snake_list = [] # list of all squares occupied by the snake
     snake_length = 1 # max allowed length of danger noodle
 
@@ -80,15 +91,19 @@ def game_loop():
                 if event.key == pg.K_LEFT:
                     lead_x_change = -block_size
                     lead_y_change = 0
+                    direction = "left"
                 if event.key == pg.K_RIGHT:
                     lead_x_change = block_size
                     lead_y_change = 0
+                    direction = "right"
                 if event.key == pg.K_UP:
                     lead_y_change = -block_size
                     lead_x_change = 0
+                    direction = "up"
                 if event.key == pg.K_DOWN:
                     lead_y_change = block_size
                     lead_x_change = 0
+                    direction = "down"
 
         if lead_x >= display_width or lead_x < 0 or lead_y >= display_height or lead_y < 0: # add boundaries
             game_over = True
