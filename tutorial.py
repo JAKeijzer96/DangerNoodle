@@ -36,6 +36,8 @@ def game_loop():
     lead_y = display_height//2
     lead_x_change = 0
     lead_y_change = 0
+    snake_list = []
+    snake_length = 10
 
     # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
     # [display_width, display_height, block_size, block_size], which would appear offscreen
@@ -81,12 +83,14 @@ def game_loop():
         program_surface.fill(white)
         pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size]) # draw apple
         
-        snake_list = []
         snake_head = []
         snake_head.append(lead_x)
         snake_head.append(lead_y)
         snake_list.append(snake_head)
         
+        if len(snake_list) >  snake_length:
+            del snake_list[0] # remove the first (oldest) element of the list
+
         snake(block_size, snake_list)
         pg.display.update() # update the display
 
