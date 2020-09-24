@@ -28,6 +28,31 @@ smallfont = pg.font.SysFont("comicsansms", 25) # size 25
 medfont = pg.font.SysFont("comicsansms", 50) # size 25
 largefont = pg.font.SysFont("comicsansms", 80) # size 25
 
+def game_intro():
+    intro = True
+
+    while intro:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_c:
+                    intro = False
+                if event.key == pg.K_q:
+                    pg.quit()
+                    quit()
+        
+        program_surface.fill(white)
+        message_to_screen("Welcome to Slither", green, -100, "large")
+        message_to_screen("The objective of the game is to eat red apples", black, -30)
+        message_to_screen("The more apples you eat, the longer you get", black)
+        message_to_screen("If you run into yourself or the edges, you die", black, 30)
+        message_to_screen("Press C to play or Q to quit", black, 180)
+        pg.display.update()
+        clock.tick(15) # no need for high fps, just dont make the delay on keydown too long
+
+
 
 def snake(block_size, snake_list):
     # make new function rotate(img, direction)?
@@ -158,4 +183,5 @@ def game_loop():
     pg.quit() # uninitialize pygame
     quit() # quit the program
 
+game_intro()
 game_loop()
