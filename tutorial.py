@@ -26,9 +26,16 @@ def snake(block_size, snake_list):
     for x_and_y in snake_list:
         pg.draw.rect(program_surface, green, [x_and_y[0],x_and_y[1],block_size,block_size]) # parameters: surface, color, [x,y,width,height]
 
+def text_objects(text, color):
+    text_surface = font.render(text, True, color) # render message, True (for anti-aliasing), color
+    return text_surface, text_surface.get_rect()
+
 def message_to_screen(msg, color):
-    screen_text = font.render(msg, True, color) # render message, True (for anti-aliasing), color
-    program_surface.blit(screen_text, [display_width//2, display_height//2]) # show screen_text on [coords]
+    # screen_text = font.render(msg, True, color) 
+    # program_surface.blit(screen_text, [display_width//2, display_height//2]) 
+    text_surface, text_rect = text_objects(msg, color)
+    text_rect.center = (display_width//2, display_height//2)
+    program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
 def game_loop():
     program_exit = False
