@@ -41,8 +41,8 @@ def game_loop():
 
     # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
     # [display_width, display_height, block_size, block_size], which would appear offscreen
-    rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
-    rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
+    rand_apple_x = round(randint(0, display_width - block_size)) # / 10) * 10 # round to nearest 10
+    rand_apple_y = round(randint(0, display_height - block_size)) # / 10) * 10 # round to nearest 10
 
     while not program_exit:
         while game_over:
@@ -50,6 +50,9 @@ def game_loop():
             message_to_screen("Game over. Press C to play again or Q to quit", red)
             pg.display.update()
             for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    program_exit = True
+                    game_over = False
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_q:
                         program_exit = True
@@ -100,16 +103,11 @@ def game_loop():
         snake(block_size, snake_list)
         pg.display.update() # update the display
 
-        # if lead_x == rand_apple_x and lead_y == rand_apple_y:
-        #     rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
-        #     rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
-        #     snake_length += 1
-
         # Collision for small snake, big apple
         if lead_x >= rand_apple_x and lead_x <= rand_apple_x + apple_thickness:
             if lead_y >= rand_apple_y and lead_y <= rand_apple_y + apple_thickness:
-                rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
-                rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
+                rand_apple_x = round(randint(0, display_width - block_size)) # / 10) * 10 # round to nearest 10
+                rand_apple_y = round(randint(0, display_height - block_size)) # / 10) * 10 # round to nearest 10
                 snake_length += 1
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
