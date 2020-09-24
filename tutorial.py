@@ -36,8 +36,8 @@ def game_loop():
     lead_y = display_height//2
     lead_x_change = 0
     lead_y_change = 0
-    snake_list = []
-    snake_length = 10
+    snake_list = [] # list of all squares occupied by the snake
+    snake_length = 1 # max allowed length of danger noodle
 
     # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
     # [display_width, display_height, block_size, block_size], which would appear offscreen
@@ -90,6 +90,11 @@ def game_loop():
         
         if len(snake_list) >  snake_length:
             del snake_list[0] # remove the first (oldest) element of the list
+        
+        for segment in snake_list[:-1]:
+            if segment == snake_head:
+                game_over = True
+
 
         snake(block_size, snake_list)
         pg.display.update() # update the display
@@ -97,6 +102,7 @@ def game_loop():
         if lead_x == rand_apple_x and lead_y == rand_apple_y:
             rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
             rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
+            snake_length += 1
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
