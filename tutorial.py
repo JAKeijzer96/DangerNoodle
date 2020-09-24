@@ -20,9 +20,9 @@ fps = 15
 block_size = 10
 font = pg.font.SysFont(None, 25) # size 25
 
-def snake(lead_x,lead_y,block_size):
-    pg.draw.rect(program_surface, green, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
-
+def snake(block_size, snake_list):
+    for x_and_y in snake_list:
+        pg.draw.rect(program_surface, green, [x_and_y[0],x_and_y[1],block_size,block_size]) # parameters: surface, color, [x,y,width,height]
 
 def message_to_screen(msg, color):
     screen_text = font.render(msg, True, color) # render message, True (for anti-aliasing), color
@@ -43,7 +43,6 @@ def game_loop():
     rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
 
     while not program_exit:
-
         while game_over:
             program_surface.fill(white)
             message_to_screen("Game over. Press C to play again or Q to quit", red)
@@ -81,7 +80,14 @@ def game_loop():
 
         program_surface.fill(white)
         pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size]) # draw apple
-        snake(lead_x,lead_y,block_size)
+        
+        snake_list = []
+        snake_head = []
+        snake_head.append(lead_x)
+        snake_head.append(lead_y)
+        snake_list.append(snake_head)
+        
+        snake(block_size, snake_list)
         pg.display.update() # update the display
 
         if lead_x == rand_apple_x and lead_y == rand_apple_y:
