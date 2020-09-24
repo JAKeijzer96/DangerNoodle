@@ -31,8 +31,12 @@ def game_loop():
     lead_y = display_height//2
     lead_x_change = 0
     lead_y_change = 0
-    rand_apple_x = randint(0, display_width - block_size)
-    rand_apple_y = randint(0, display_height - block_size)
+
+    # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
+    # [display_width, display_height, block_size, block_size], which would appear offscreen
+    rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
+    rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
+
     while not program_exit:
 
         while game_over:
@@ -74,6 +78,9 @@ def game_loop():
         pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size])
         pg.draw.rect(program_surface, black, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
         pg.display.update() # update the display
+
+        if lead_x == rand_apple_x and lead_y == rand_apple_y:
+            print("om nom nom")
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
