@@ -3,9 +3,10 @@ from random import randint
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
 
-white = (255,255,255) # RGB value of the color
-black = (0,0,0)
-red = (255,0,0)
+white = (255, 255, 255) # RGB value of the color
+black = (0, 0, 0)
+red = (255, 0, 0)
+green = (0, 140, 0)
 
 display_width = 800
 display_height = 600
@@ -18,6 +19,10 @@ fps = 15
 
 block_size = 10
 font = pg.font.SysFont(None, 25) # size 25
+
+def snake(lead_x,lead_y,block_size):
+    pg.draw.rect(program_surface, green, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
+
 
 def message_to_screen(msg, color):
     screen_text = font.render(msg, True, color) # render message, True (for anti-aliasing), color
@@ -75,12 +80,13 @@ def game_loop():
         lead_y += lead_y_change
 
         program_surface.fill(white)
-        pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size])
-        pg.draw.rect(program_surface, black, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
+        pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size]) # draw apple
+        snake(lead_x,lead_y,block_size)
         pg.display.update() # update the display
 
         if lead_x == rand_apple_x and lead_y == rand_apple_y:
-            print("om nom nom")
+            rand_apple_x = round(randint(0, display_width - block_size) / 10) * 10 # round to nearest 10
+            rand_apple_y = round(randint(0, display_height - block_size) / 10) * 10 # round to nearest 10
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
