@@ -1,8 +1,7 @@
-import pygame
-import time
+import pygame as pg
+from random import randint
 
-
-pygame.init() # initialize pygame modules. Returns a tuple of (succesful, unsuccesful) initializations
+pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
 
 white = (255,255,255) # RGB value of the color
 black = (0,0,0)
@@ -11,77 +10,74 @@ red = (255,0,0)
 display_width = 800
 display_height = 600
 
-gameDisplay = pygame.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
-pygame.display.set_caption('Slither')
+program_surface = pg.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
+pg.display.set_caption('Slither')
 
-
-
-clock = pygame.time.Clock() # pygame clock object used to set fps
+clock = pg.time.Clock() # pg clock object used to set fps
 fps = 15
 
 block_size = 10
-
-font = pygame.font.SysFont(None, 25) # size 25
+font = pg.font.SysFont(None, 25) # size 25
 
 def message_to_screen(msg, color):
     screen_text = font.render(msg, True, color) # render message, True (for anti-aliasing), color
-    gameDisplay.blit(screen_text, [display_width//2, display_height//2]) # show screen_text on [coords]
+    program_surface.blit(screen_text, [display_width//2, display_height//2]) # show screen_text on [coords]
 
-def gameLoop():
-    gameExit = False
-    gameOver = False
+def game_loop():
+    program_exit = False
+    game_over = False
 
     lead_x = display_width//2
     lead_y = display_height//2
     lead_x_change = 0
     lead_y_change = 0
-    while not gameExit:
+    rand_apple_x = randint(0, display_width - block_size)
+    rand_apple_y = randint(0, display_height - block_size)
+    while not program_exit:
 
-        while gameOver == True:
-            gameDisplay.fill(white)
-            message_to_screen("Game over.\nPress C to play again or Q to quit", red)
-            pygame.display.update()
-            for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_q:
-                        gameExit = True
-                        gameOver = False
-                    if event.key == pygame.K_c:
-                        gameLoop()
+        while game_over:
+            program_surface.fill(white)
+            message_to_screen("Game over. Press C to play again or Q to quit", red)
+            pg.display.update()
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_q:
+                        program_exit = True
+                        game_over = False
+                    if event.key == pg.K_c:
+                        game_loop()
 
-        for event in pygame.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
-            if event.type == pygame.QUIT:
-                gameExit = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+        for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
+            if event.type == pg.QUIT:
+                program_exit = True
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_LEFT:
                     lead_x_change = -block_size
                     lead_y_change = 0
-                if event.key == pygame.K_RIGHT:
+                if event.key == pg.K_RIGHT:
                     lead_x_change = block_size
                     lead_y_change = 0
-                if event.key == pygame.K_UP:
+                if event.key == pg.K_UP:
                     lead_y_change = -block_size
                     lead_x_change = 0
-                if event.key == pygame.K_DOWN:
+                if event.key == pg.K_DOWN:
                     lead_y_change = block_size
                     lead_x_change = 0
 
         if lead_x >= display_width or lead_x < 0 or lead_y >= display_height or lead_y < 0: # add boundaries
-            gameOver = True
+            game_over = True
         
         lead_x += lead_x_change
         lead_y += lead_y_change
 
-        gameDisplay.fill(white)
-        pygame.draw.rect(gameDisplay, black, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
-        pygame.display.update() # update the display
+        program_surface.fill(white)
+        pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, block_size, block_size])
+        pg.draw.rect(program_surface, black, [lead_x,lead_y,block_size,block_size]) # parameters: surface, color, [x,y,width,height]
+        pg.display.update() # update the display
 
-        clock.tick(fps) # tick(x) for a game of x frames per second
+        clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
-    message_to_screen("You lose", red)
-    pygame.display.update()
-    time.sleep(2)
-    pygame.quit() # uninitializes everything
-    quit() # quit the python program
+    pg.quit() # uninitialize pygame
+    quit() # quit the program
 
-gameLoop()
+game_loop()
