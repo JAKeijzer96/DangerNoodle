@@ -14,6 +14,9 @@ display_height = 600
 program_surface = pg.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
 pg.display.set_caption('Slither')
 
+img = pg.image.load("snakehead.png")
+
+
 clock = pg.time.Clock() # pg clock object used to set fps
 fps = 15
 
@@ -23,7 +26,8 @@ apple_thickness = 30
 font = pg.font.SysFont(None, 25) # size 25
 
 def snake(block_size, snake_list):
-    for x_and_y in snake_list:
+    program_surface.blit(img, (snake_list[-1][0], snake_list[-1][1])) # blit the snake head image
+    for x_and_y in snake_list[:-1]: # the last element is the head, so dont put a square there
         pg.draw.rect(program_surface, green, [x_and_y[0],x_and_y[1],block_size,block_size]) # parameters: surface, color, [x,y,width,height]
 
 def text_objects(text, color):
