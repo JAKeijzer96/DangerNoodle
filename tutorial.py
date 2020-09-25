@@ -63,6 +63,10 @@ def rand_apple_gen():
     rand_apple_y = round(randint(0, display_height - apple_thickness)) # / 10) * 10 # round to nearest 10
     return rand_apple_x, rand_apple_y
 
+def print_score(score):
+    text = smallfont.render(f"Score: {score}", True, black)
+    program_surface.blit(text, [0,0])
+
 def snake(block_size, snake_list):
     draw_tail = 0
     # make new function rotate(img, direction)?
@@ -120,7 +124,7 @@ def game_loop():
     lead_y_change = block_size
     snake_list = [] # list of all squares occupied by the snake
     snake_length = 2 # max allowed length of danger noodle
-
+    score = 0 # score, could use snake_length - base length but base length still not certain
     rand_apple_x, rand_apple_y = rand_apple_gen()
 
     while not program_exit:
@@ -193,6 +197,7 @@ def game_loop():
 
 
         snake(block_size, snake_list)
+        print_score(score)
         pg.display.update() # update the display
 
         # Collision for small snake, big apple
@@ -207,6 +212,7 @@ def game_loop():
             and lead_x < rand_apple_x + apple_thickness and lead_y < rand_apple_y + apple_thickness):
                 rand_apple_x, rand_apple_y = rand_apple_gen()
                 snake_length += 1
+                score += 1
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
