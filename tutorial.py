@@ -1,4 +1,5 @@
 import pygame as pg
+from sys import exit
 from random import randint
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
@@ -39,13 +40,13 @@ def game_intro():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
-                quit()
+                exit()
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_c:
                     intro = False
                 if event.key == pg.K_q:
                     pg.quit()
-                    quit()
+                    exit()
         
         program_surface.fill(white)
         message_to_screen("Welcome to Slither", green, -100, "large")
@@ -77,14 +78,14 @@ def pause():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
-                quit()
+                exit()
 
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_c:
                     paused = False
                 elif event.key == pg.K_q:
                     pg.quit()
-                    quit()
+                    exit()
 
         program_surface.fill(white)
         message_to_screen("Paused", black, -100, size="large")
@@ -244,7 +245,7 @@ def game_loop():
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
 
     pg.quit() # uninitialize pygame
-    quit() # quit the program
+    exit() # quit the program
 
 game_intro()
 game_loop()
