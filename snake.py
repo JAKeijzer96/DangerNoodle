@@ -1,19 +1,23 @@
-import pygame as pg # TODO: try/catch blocks
+try:
+    import pygame as pg
+except ModuleNotFoundError as e:
+    print(f"{e}: The pygame module could not be found")
 from sys import exit
 from random import randint
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
 
-WHITE = (255, 255, 255) # RGB value of the color
+# Initialize color constants as their corresponding RGB values
+WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
-GREEN = (0, 140, 0) # TODO: Rename so it's clear it's not bright green?
+SNAKE_GREEN = (0, 155, 0) # Not bright green
 
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
 
-FPS = 15 # TODO: Find optimal fps with possibly lower block_size
-
+FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock tick.
+         # increments depend on but are not equal to block_size. if they were this could mess up the grid system
 BLOCK_SIZE = 20
 
 class Snake():
@@ -54,7 +58,7 @@ class Snake():
     def game_intro(self):
         # Print introductory messages (start menu)
         self.program_surface.fill(WHITE)
-        self.message_to_screen("Welcome to Slither", GREEN, -100, "large")
+        self.message_to_screen("Welcome to Slither", SNAKE_GREEN, -100, "large")
         self.message_to_screen("The objective of the game is to eat red apples", BLACK, -30)
         self.message_to_screen("The more apples you eat, the longer you get", BLACK)
         self.message_to_screen("If you run into yourself or the edges, you die", BLACK, 30)
@@ -142,8 +146,11 @@ class Snake():
 
             self.program_surface.blit(tail, (self.snake_list[0][0], self.snake_list[0][1]))
         
+        # TODO: Add extra segment images for the body and when we turn a corner
+        # TODO: For corner image, check coords before and after current segment to see which way to rotate the image
+
         for x_and_y in self.snake_list[draw_tail:-1]: # the last element is the head, so dont put a square there
-            pg.draw.rect(self.program_surface, GREEN, [x_and_y[0],x_and_y[1],BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
+            pg.draw.rect(self.program_surface, SNAKE_GREEN, [x_and_y[0],x_and_y[1],BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
 
     def text_objects(self, text, color, size):
         if size == "small":
@@ -162,7 +169,7 @@ class Snake():
 
     def game_loop(self):
         while not self.program_exit:
-            if self.game_over: # only paste text once # TODO: is it possible to clean this up?
+            if self.game_over: # only paste text once # TODO: is it possible to clean this up? merge if game_over and while game_over
                 #program_surface.fill(white)
                 self.message_to_screen("Game over", RED, y_displace=-50, size="large")
                 self.message_to_screen("Press C to play again or Q to quit", BLACK, 50, size="med")
