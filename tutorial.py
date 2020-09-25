@@ -52,7 +52,7 @@ def game_intro():
         message_to_screen("The objective of the game is to eat red apples", black, -30)
         message_to_screen("The more apples you eat, the longer you get", black)
         message_to_screen("If you run into yourself or the edges, you die", black, 30)
-        message_to_screen("Press C to play or Q to quit", black, 180)
+        message_to_screen("Press C to play, P to pause or Q to quit", black, 180)
         pg.display.update()
         clock.tick(15) # no need for high fps, just dont make the delay on keydown too long
 
@@ -66,6 +66,31 @@ def rand_apple_gen():
 def print_score(score):
     text = smallfont.render(f"Score: {score}", True, black)
     program_surface.blit(text, [0,0])
+
+def pause():
+    # Can do one update once paused, then stop updating
+    # and only check for event handling
+    # this way you can make more of an overlay instead of a new full screen
+    paused = True
+
+    while paused:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                quit()
+
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_c:
+                    paused = False
+                elif event.key == pg.K_q:
+                    pg.quit()
+                    quit()
+
+        program_surface.fill(white)
+        message_to_screen("Paused", black, -100, size="large")
+        message_to_screen("Press C to continue or Q to quit", black)
+        pg.display.update()
+        clock.tick(15) # dont need high fps
 
 def snake(block_size, snake_list):
     draw_tail = 0
@@ -154,24 +179,26 @@ def game_loop():
                     lead_x_change = -block_size
                     lead_y_change = 0
                     direction = "left"
-                if event.key == pg.K_RIGHT:
+                elif event.key == pg.K_RIGHT:
                     if lead_x_change == -block_size: # disallow running into self
                         break
                     lead_x_change = block_size
                     lead_y_change = 0
                     direction = "right"
-                if event.key == pg.K_UP:
+                elif event.key == pg.K_UP:
                     if lead_y_change == block_size: # disallow running into self
                         break
                     lead_y_change = -block_size
                     lead_x_change = 0
                     direction = "up"
-                if event.key == pg.K_DOWN:
+                elif event.key == pg.K_DOWN:
                     if lead_y_change == -block_size: # disallow running into self
                         break
                     lead_y_change = block_size
                     lead_x_change = 0
                     direction = "down"
+                elif event.key == pg.K_p:
+                    pause()
 
         if lead_x >= display_width or lead_x < 0 or lead_y >= display_height or lead_y < 0: # add boundaries
             game_over = True
