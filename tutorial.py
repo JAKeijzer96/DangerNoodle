@@ -11,13 +11,15 @@ green = (0, 140, 0)
 display_width = 800
 display_height = 600
 
-program_surface = pg.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
-pg.display.set_caption('Slither')
-
+# Load images
+icon = pg.image.load("apple.png")
 head_img = pg.image.load("snakehead.png") # snakehead.png is a 20x20 file
 apple_img = pg.image.load("apple.png") # apple.png is a 20x20 file
 tail_img = pg.image.load("snaketail.png") # snaketail.png is a 20x20 file
-
+# Initialize game display
+program_surface = pg.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
+pg.display.set_caption('Slither')
+pg.display.set_icon(apple_img) # 32x32 optimal size ? In 2014, may be outdated
 
 clock = pg.time.Clock() # pg clock object used to set fps
 fps = 15
@@ -54,7 +56,12 @@ def game_intro():
         pg.display.update()
         clock.tick(15) # no need for high fps, just dont make the delay on keydown too long
 
-
+def rand_apple_gen():
+    # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
+    # [display_width, display_height, block_size, block_size], which would appear offscreen
+    rand_apple_x = round(randint(0, display_width - apple_thickness)) # / 10) * 10 # round to nearest 10
+    rand_apple_y = round(randint(0, display_height - apple_thickness)) # / 10) * 10 # round to nearest 10
+    return rand_apple_x, rand_apple_y
 
 def snake(block_size, snake_list):
     draw_tail = 0
@@ -114,10 +121,7 @@ def game_loop():
     snake_list = [] # list of all squares occupied by the snake
     snake_length = 2 # max allowed length of danger noodle
 
-    # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
-    # [display_width, display_height, block_size, block_size], which would appear offscreen
-    rand_apple_x = round(randint(0, display_width - apple_thickness)) # / 10) * 10 # round to nearest 10
-    rand_apple_y = round(randint(0, display_height - apple_thickness)) # / 10) * 10 # round to nearest 10
+    rand_apple_x, rand_apple_y = rand_apple_gen()
 
     while not program_exit:
         while game_over:
@@ -201,8 +205,7 @@ def game_loop():
         # Updated collision for any size snake/apple
         if (lead_x + block_size > rand_apple_x and lead_y + block_size > rand_apple_y
             and lead_x < rand_apple_x + apple_thickness and lead_y < rand_apple_y + apple_thickness):
-                rand_apple_x = round(randint(0, display_width - apple_thickness)) # / 10) * 10 # round to nearest 10
-                rand_apple_y = round(randint(0, display_height - apple_thickness)) # / 10) * 10 # round to nearest 10
+                rand_apple_x, rand_apple_y = rand_apple_gen()
                 snake_length += 1
 
         clock.tick(fps) # tick(x) for a game of x frames per second, put this after display.update()
