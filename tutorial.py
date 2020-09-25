@@ -14,8 +14,9 @@ display_height = 600
 program_surface = pg.display.set_mode((display_width,display_height)) # returns a surface object with (w,h) wxh pixels
 pg.display.set_caption('Slither')
 
-img = pg.image.load("snakehead.png") # snakehead.png is a 20x20 file
+head_img = pg.image.load("snakehead.png") # snakehead.png is a 20x20 file
 apple_img = pg.image.load("apple.png") # apple.png is a 20x20 file
+tail_img = pg.image.load("snaketail.png") # snaketail.png is a 20x20 file
 
 
 clock = pg.time.Clock() # pg clock object used to set fps
@@ -56,19 +57,34 @@ def game_intro():
 
 
 def snake(block_size, snake_list):
+    draw_tail = 0
     # make new function rotate(img, direction)?
     # could also remove direction variable and immediately rotate imgs when key is pressed
     if direction == "up":
-        head = img
+        head = head_img
     elif direction == "left":
-        head = pg.transform.rotate(img, 90) # rotate counterclockwise
+        head = pg.transform.rotate(head_img, 90) # rotate counterclockwise
     elif direction == "down":
-        head = pg.transform.rotate(img, 180)
+        head = pg.transform.rotate(head_img, 180)
     elif direction == "right":
-        head = pg.transform.rotate(img, 270)
-
+        head = pg.transform.rotate(head_img, 270)
+    
     program_surface.blit(head, (snake_list[-1][0], snake_list[-1][1])) # blit the snake head image
-    for x_and_y in snake_list[:-1]: # the last element is the head, so dont put a square there
+    
+    if len(snake_list) > 1:
+        draw_tail = 1
+        if snake_list[1][0] < snake_list[0][0]: # x less, so go left
+            tail = pg.transform.rotate(tail_img, 90)
+        elif snake_list[1][1] > snake_list[0][1]: # y greater, go down
+            tail = pg.transform.rotate(tail_img, 180)
+        elif snake_list[1][0] > snake_list[0][0]: # x greater, go right
+            tail = pg.transform.rotate(tail_img, 270)
+        else: # going up
+            tail = tail_img
+
+        program_surface.blit(tail, (snake_list[0][0], snake_list[0][1]))
+    
+    for x_and_y in snake_list[draw_tail:-1]: # the last element is the head, so dont put a square there
         pg.draw.rect(program_surface, green, [x_and_y[0],x_and_y[1],block_size,block_size]) # parameters: surface, color, [x,y,width,height]
 
 def text_objects(text, color, size):
