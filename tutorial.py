@@ -73,7 +73,10 @@ def pause():
     # and only check for event handling
     # this way you can make more of an overlay instead of a new full screen
     paused = True
-
+    message_to_screen("Paused", black, -100, size="large")
+    message_to_screen("Press C to continue or Q to quit", black)
+    pg.display.update()
+    
     while paused:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -87,10 +90,8 @@ def pause():
                     pg.quit()
                     exit()
 
-        program_surface.fill(white)
-        message_to_screen("Paused", black, -100, size="large")
-        message_to_screen("Press C to continue or Q to quit", black)
-        pg.display.update()
+        #program_surface.fill(white)
+
         clock.tick(15) # dont need high fps
 
 def snake(block_size, snake_list):
@@ -154,11 +155,13 @@ def game_loop():
     rand_apple_x, rand_apple_y = rand_apple_gen()
 
     while not program_exit:
-        while game_over:
-            program_surface.fill(white)
+        if game_over: # only paste text once
+            #program_surface.fill(white)
             message_to_screen("Game over", red, y_displace=-50, size="large")
             message_to_screen("Press C to play again or Q to quit", black, 50, size="med")
             pg.display.update()
+            
+        while game_over:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     program_exit = True
