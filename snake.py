@@ -49,9 +49,10 @@ class Snake():
         self.lead_y = DISPLAY_HEIGHT//2 # y-ocation of head, initially center of screen
         self.lead_x_change = 0 # Change in lead_x location every clock tick
         self.lead_y_change = BLOCK_SIZE # change in lead_y location every clock tick, initially snake moves down
-        self.direction = "down" # TODO: remove this? only used to rotate imgs
         self.snake_list = [] # list of all squares currently occupied by the snake
         self.snake_length = 2 # max allowed length of the snake
+        self.head = self.rotate(self.head_img, 180) # starting direction is down
+        #self.tail = self.tail_img
         self.score = 0 # score, could use snake_length - base length but base length still not certain # TODO ?
         self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # TODO: refactor? also comment functionality
 
@@ -71,10 +72,10 @@ class Snake():
                 if event.type == pg.QUIT:
                     pg.quit()
                     exit()
-                if event.type == pg.KEYDOWN:
+                elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_c:
                         intro = False
-                    if event.key == pg.K_q:
+                    elif event.key == pg.K_q:
                         pg.quit()
                         exit()
             
@@ -116,31 +117,22 @@ class Snake():
             # TODO: find optimal fps here
             self.clock.tick(15) # dont need high fps
 
+    def rotate(self, img, degrees):
+        return pg.transform.rotate(img, degrees)
+
     def snake(self, block_size, snake_list):
         draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without index errors
-        # TODO: make new function rotate?
-        # make new function rotate(img, direction)?
-        # TODO: remove direction variable and rotate imgs on KEYDOWN
-        # could also remove direction variable and immediately rotate imgs when key is pressed
-        if self.direction == "up":
-            head = self.head_img
-        elif self.direction == "left":
-            head = pg.transform.rotate(self.head_img, 90) # rotate counterclockwise
-        elif self.direction == "down":
-            head = pg.transform.rotate(self.head_img, 180)
-        elif self.direction == "right":
-            head = pg.transform.rotate(self.head_img, 270)
-        
-        self.program_surface.blit(head, (self.snake_list[-1][0], self.snake_list[-1][1])) # blit the snake head image
+
+        self.program_surface.blit(self.head, (self.snake_list[-1][0], self.snake_list[-1][1])) # blit the snake head image
         
         if len(self.snake_list) > 1:
             draw_tail = 1
             if self.snake_list[1][0] < self.snake_list[0][0]: # x less, so go left
-                tail = pg.transform.rotate(self.tail_img, 90)
+                tail = self.rotate(self.tail_img, 90)
             elif self.snake_list[1][1] > self.snake_list[0][1]: # y greater, go down
-                tail = pg.transform.rotate(self.tail_img, 180)
+                tail = self.rotate(self.tail_img, 180)
             elif self.snake_list[1][0] > self.snake_list[0][0]: # x greater, go right
-                tail = pg.transform.rotate(self.tail_img, 270)
+                tail = self.rotate(self.tail_img, 270)
             else: # going up
                 tail = self.tail_img
 
@@ -180,11 +172,11 @@ class Snake():
                     if event.type == pg.QUIT:
                         self.program_exit = True
                         self.game_over = False
-                    if event.type == pg.KEYDOWN:
+                    elif event.type == pg.KEYDOWN:
                         if event.key == pg.K_q:
                             self.program_exit = True
                             self.game_over = False
-                        if event.key == pg.K_c:
+                        elif event.key == pg.K_c:
                             self.reset_game_variables()
                             self.game_loop() # TODO: restart game loop without re-initializing class
 
@@ -198,26 +190,30 @@ class Snake():
                             break # TODO: momre comments on functionality
                         self.lead_x_change = -BLOCK_SIZE
                         self.lead_y_change = 0
-                        self.direction = "left" # TODO: remove this variable?
+                        #self.direction = "left" # TODO: remove this variable?
+                        self.head = self.rotate(self.head_img, 90)
                         # TODO: also rotate imgs here if removing direction variable
                     elif event.key == pg.K_RIGHT:
                         if self.lead_x_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_x_change = BLOCK_SIZE
                         self.lead_y_change = 0
-                        self.direction = "right"
+                        #self.direction = "right"
+                        self.head = self.rotate(self.head_img, 270)
                     elif event.key == pg.K_UP:
                         if self.lead_y_change == BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = -BLOCK_SIZE
                         self.lead_x_change = 0
-                        self.direction = "up"
+                        #self.direction = "up"
+                        self.head = self.head_img
                     elif event.key == pg.K_DOWN:
                         if self.lead_y_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = BLOCK_SIZE
                         self.lead_x_change = 0
-                        self.direction = "down"
+                        #self.direction = "down"
+                        self.head = self.rotate(self.head_img, 180)
                     elif event.key == pg.K_p:
                         self.pause()
 
