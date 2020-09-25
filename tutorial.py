@@ -112,7 +112,7 @@ def game_loop():
     lead_x_change = 0
     lead_y_change = block_size
     snake_list = [] # list of all squares occupied by the snake
-    snake_length = 1 # max allowed length of danger noodle
+    snake_length = 2 # max allowed length of danger noodle
 
     # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
     # [display_width, display_height, block_size, block_size], which would appear offscreen
@@ -141,18 +141,26 @@ def game_loop():
                 program_exit = True
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_LEFT:
+                    if lead_x_change == block_size: # disallow running into self
+                        break
                     lead_x_change = -block_size
                     lead_y_change = 0
                     direction = "left"
                 if event.key == pg.K_RIGHT:
+                    if lead_x_change == -block_size: # disallow running into self
+                        break
                     lead_x_change = block_size
                     lead_y_change = 0
                     direction = "right"
                 if event.key == pg.K_UP:
+                    if lead_y_change == block_size: # disallow running into self
+                        break
                     lead_y_change = -block_size
                     lead_x_change = 0
                     direction = "up"
                 if event.key == pg.K_DOWN:
+                    if lead_y_change == -block_size: # disallow running into self
+                        break
                     lead_y_change = block_size
                     lead_x_change = 0
                     direction = "down"
