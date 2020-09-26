@@ -14,6 +14,7 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 # Initialize color constants as their corresponding RGB values
 WHITE = (255, 255, 255)
+GREY = (140, 140, 140)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 SNAKE_GREEN = (0, 155, 0) # Not bright green
@@ -52,6 +53,11 @@ class Snake():
         self.smallfont = pg.font.Font(REGULAR_FONT, 25) # TODO: find prettier font and matching sizes
         self.medfont = pg.font.Font(REGULAR_FONT, 40) # size 50
         self.largefont = pg.font.Font(REGULAR_FONT, 80) # size 80
+        # Initialize colors
+        self.background_color = WHITE
+        self.text_color_normal = BLACK
+        self.text_color_emphasis = RED
+        self.snake_color = SNAKE_GREEN
         # Call function to reset game variables, in this case initializing them
         self.reset_game_variables()
 
@@ -74,12 +80,12 @@ class Snake():
 
     def draw_main_menu(self):
         # Print introductory messages (start menu)
-        self.program_surface.fill(WHITE)
-        self.message_to_screen("Welcome to Slither", SNAKE_GREEN, -100, "large")
-        self.message_to_screen("The objective of the game is to eat red apples", BLACK, -30, "med")
-        self.message_to_screen("The more apples you eat, the longer you get", BLACK, 0, "med")
-        self.message_to_screen("If you run into yourself or the edges, you die", BLACK, 30, "med")
-        self.message_to_screen("Press C to play, P to pause or Q to quit", BLACK, 180, "med")
+        self.program_surface.fill(self.background_color)
+        self.message_to_screen("Welcome to Slither", self.snake_color, -100, "large")
+        self.message_to_screen("The objective of the game is to eat red apples", self.text_color_normal, -30, "med")
+        self.message_to_screen("The more apples you eat, the longer you get", self.text_color_normal, 0, "med")
+        self.message_to_screen("If you run into yourself or the edges, you die", self.text_color_normal, 30, "med")
+        self.message_to_screen("Press C to play, O for options, P to pause or Q to quit", self.text_color_normal, 180, "med")
         pg.display.update()
 
     def main_menu(self):
@@ -103,22 +109,51 @@ class Snake():
                         self.draw_main_menu()
             
             # TODO: find optimal clock tick here
-            self.clock.tick(15) # no need for high fps, just dont make the delay on keydown too long
+            # no need for high fps, just dont make the delay on keydown too long
+            # Could remove clock.tick() entirely in menus, but that would cause the while
+            # loop to run as fast as it can, demanding a lot of unnecessary resources
+            self.clock.tick(15)
+            
 
-    def options_menu(self):
-        in_submenu = True
-        self.program_surface.fill(WHITE)
-        self.message_to_screen("Temporary Options menu", BLACK, -100, "large")
+    def draw_options_menu(self):
+        self.program_surface.fill(self.background_color)
+        self.message_to_screen("Temporary Options menu", self.text_color_normal, -100, "large")
+        self.message_to_screen("Press D to toggle dark mode", self.text_color_normal)
+        self.message_to_screen("Press BACKSPACE to return to main menu", self.text_color_normal, 50)
         pg.display.update()
 
+    def options_menu(self):
+        self.draw_options_menu()
+
+        in_submenu = True
         while in_submenu:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_BACKSPACE:
                         in_submenu = False
+                    if event.key == pg.K_d:
+                        self.toggle_dark_mode()
+                        self.draw_options_menu()
                 elif event.type == pg.QUIT:
                     pg.quit()
                     exit()
+            
+            # TODO: find optimal clock tick here
+            self.clock.tick(15)
+    
+    def toggle_dark_mode(self):
+        if self.background_color == WHITE:
+            self.background_color = BLACK
+            self.text_color_normal = WHITE
+            # TODO: Find alternative emphasis color?
+            #self.text_color_emphasis = RED
+            # TODO: Add alternative snake color?
+            #self.snake_color = SNAKE_GREEN
+        else:
+            self.background_color = WHITE
+            self.text_color_normal = BLACK
+            #self.text_color_emphasis = RED
+            #self.snake_color = SNAKE_GREEN
 
     def rand_apple_gen(self):
         # TODO: Make apple unable to spawn on/under snake
@@ -130,28 +165,27 @@ class Snake():
         return rand_apple_x, rand_apple_y
 
     def print_score(self, score):
-        text = self.smallfont.render(f"Score: {score}", True, BLACK)
+        text = self.smallfont.render(f"Score: {score}", True, self.text_color_normal)
         self.program_surface.blit(text, [0,0])
 
     def pause(self):
         # Update once when paused, then only check for event handling
-        self.message_to_screen("Paused", BLACK, -100, size="large")
-        self.message_to_screen("Press C to continue or Q to quit", BLACK)
+        self.message_to_screen("Paused", self.text_color_normal, -100, size="large")
+        self.message_to_screen("Press C to continue or Q to quit", self.text_color_normal)
         pg.display.update()
         
         paused = True
         while paused:
             for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    exit()
-
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_c:
                         paused = False
                     elif event.key == pg.K_q:
                         pg.quit()
                         exit()
+                elif event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
             # TODO: find optimal fps here
             self.clock.tick(15) # dont need high fps
 
@@ -180,7 +214,7 @@ class Snake():
         # TODO: For corner image, check coords before and after current segment to see which way to rotate the image
 
         for x_and_y in self.snake_list[draw_tail:-1]: # the last element is the head, so dont put a square there
-            pg.draw.rect(self.program_surface, SNAKE_GREEN, [x_and_y[0],x_and_y[1],BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
+            pg.draw.rect(self.program_surface, self.snake_color, [x_and_y[0],x_and_y[1],BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
 
     def text_objects(self, text, color, size):
         if size == "small":
@@ -199,16 +233,13 @@ class Snake():
 
     def game_over_function(self):
         # Only paste text once
-        self.message_to_screen("Game over", RED, y_displace=-50, size="large")
-        self.message_to_screen("Press C to play again, Q to quit or BACKSPACE to return to main menu", BLACK, 50, size="med")
+        self.message_to_screen("Game over", self.text_color_emphasis, y_displace=-50, size="large")
+        self.message_to_screen("Press C to play again, Q to quit or BACKSPACE to return to main menu", self.text_color_normal, 50, size="med")
         pg.display.update()
         
         while self.game_over:
             for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.program_exit = True
-                    self.game_over = False
-                elif event.type == pg.KEYDOWN:
+                if event.type == pg.KEYDOWN:
                     if event.key == pg.K_q:
                         pg.quit()
                         exit()
@@ -220,14 +251,14 @@ class Snake():
                         # Reset variables, inclucing in_game to False to exit out of game_loop()
                         # and return to main_menu()
                         self.reset_game_variables()
+                elif event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
 
     def game_loop(self):
         self.in_game = True
         while self.in_game:
             for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
-                if event.type == pg.QUIT:
-                    pg.quit()
-                    exit()
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_LEFT:
                         if self.lead_x_change == BLOCK_SIZE: # disallow running into self
@@ -255,6 +286,9 @@ class Snake():
                         self.head = self.rotate(self.head_img, 180)
                     elif event.key == pg.K_p:
                         self.pause()
+                elif event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
 
             if self.lead_x >= DISPLAY_WIDTH or self.lead_x < 0 or self.lead_y >= DISPLAY_HEIGHT or self.lead_y < 0: # add boundaries
                 self.game_over = True # TODO: comment on if statement
@@ -262,7 +296,7 @@ class Snake():
             self.lead_x += self.lead_x_change
             self.lead_y += self.lead_y_change
 
-            self.program_surface.fill(WHITE)
+            self.program_surface.fill(self.background_color)
             self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
             
             # TODO: check if this is needed or double functionality
