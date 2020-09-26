@@ -204,7 +204,7 @@ class Snake():
                     elif event.key == pg.K_UP:
                         indicator_pos[1] -= 1
                         if indicator_pos[1] < 0:
-                            indicator_pos = number_of_vert_entries
+                            indicator_pos[1] = number_of_vert_entries
                         self.draw_options_menu(indicator_pos)
                     # if event.key == pg.K_BACKSPACE:
                     #     in_submenu = False
