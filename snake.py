@@ -4,14 +4,20 @@ except ModuleNotFoundError as e:
     print(f"{e}: The pygame module could not be found")
 from sys import exit
 from random import randint
+import ctypes
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
+
+# set unique windows app id so Windows uses the proper icon in the taskbar when executing snake.py
+myappid = "arbitrary string to uniquely identify snake game"
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 # Initialize color constants as their corresponding RGB values
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 SNAKE_GREEN = (0, 155, 0) # Not bright green
+REGULAR_FONT = "./Gasalt-Regular.ttf"
 
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
@@ -23,20 +29,20 @@ BLOCK_SIZE = 20
 class Snake():
     def __init__(self):
         # Load images
-        self.icon = pg.image.load("apple.png") # icon should be a 32x32 file
+        self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
         self.head_img = pg.image.load("snakehead.png") # block_size x block_size pixels
         self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
         self.tail_img = pg.image.load("snaketail.png") # block_size x block_size pixels
         # Initialize main program surface
         self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
         pg.display.set_caption("DangerNoodle - A very original game by Jasper")
-        pg.display.set_icon(self.apple_img) # TODO: add proper icon
+        pg.display.set_icon(self.icon) # TODO: add proper icon
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
         # Initialize fonts
-        self.smallfont = pg.font.SysFont("comicsansms", 25) # TODO: find prettier font and matching sizes
-        self.medfont = pg.font.SysFont("comicsansms", 50) # size 50
-        self.largefont = pg.font.SysFont("comicsansms", 80) # size 80
+        self.smallfont = pg.font.Font(REGULAR_FONT, 25) # TODO: find prettier font and matching sizes
+        self.medfont = pg.font.Font(REGULAR_FONT, 40) # size 50
+        self.largefont = pg.font.Font(REGULAR_FONT, 80) # size 80
         # Call function to reset game variables, in this case initializing them
         self.reset_game_variables()
 
@@ -60,10 +66,10 @@ class Snake():
         # Print introductory messages (start menu)
         self.program_surface.fill(WHITE)
         self.message_to_screen("Welcome to Slither", SNAKE_GREEN, -100, "large")
-        self.message_to_screen("The objective of the game is to eat red apples", BLACK, -30)
-        self.message_to_screen("The more apples you eat, the longer you get", BLACK)
-        self.message_to_screen("If you run into yourself or the edges, you die", BLACK, 30)
-        self.message_to_screen("Press C to play, P to pause or Q to quit", BLACK, 180)
+        self.message_to_screen("The objective of the game is to eat red apples", BLACK, -30, "med")
+        self.message_to_screen("The more apples you eat, the longer you get", BLACK, 0, "med")
+        self.message_to_screen("If you run into yourself or the edges, you die", BLACK, 30, "med")
+        self.message_to_screen("Press C to play, P to pause or Q to quit", BLACK, 180, "med")
         pg.display.update()
 
         intro = True
@@ -121,7 +127,7 @@ class Snake():
         return pg.transform.rotate(img, degrees)
 
     def snake(self, block_size, snake_list):
-        draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without index errors
+        draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without raising index errors
 
         self.program_surface.blit(self.head, (self.snake_list[-1][0], self.snake_list[-1][1])) # blit the snake head image
         
@@ -190,29 +196,24 @@ class Snake():
                             break # TODO: momre comments on functionality
                         self.lead_x_change = -BLOCK_SIZE
                         self.lead_y_change = 0
-                        #self.direction = "left" # TODO: remove this variable?
                         self.head = self.rotate(self.head_img, 90)
-                        # TODO: also rotate imgs here if removing direction variable
                     elif event.key == pg.K_RIGHT:
                         if self.lead_x_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_x_change = BLOCK_SIZE
                         self.lead_y_change = 0
-                        #self.direction = "right"
                         self.head = self.rotate(self.head_img, 270)
                     elif event.key == pg.K_UP:
                         if self.lead_y_change == BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = -BLOCK_SIZE
                         self.lead_x_change = 0
-                        #self.direction = "up"
                         self.head = self.head_img
                     elif event.key == pg.K_DOWN:
                         if self.lead_y_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = BLOCK_SIZE
                         self.lead_x_change = 0
-                        #self.direction = "down"
                         self.head = self.rotate(self.head_img, 180)
                     elif event.key == pg.K_p:
                         self.pause()
@@ -224,7 +225,6 @@ class Snake():
             self.lead_y += self.lead_y_change
 
             self.program_surface.fill(WHITE)
-            #pg.draw.rect(program_surface, red, [rand_apple_x, rand_apple_y, apple_thickness, apple_thickness]) # draw apple
             self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
             
             # TODO: check if this is needed or double functionality
