@@ -96,18 +96,17 @@ class Snake():
         pg.quit()
         exit()
 
-    def draw_main_menu(self, indicator_pos):
+    def draw_main_menu(self, ind_pos):
         # TODO: integrate indicator_pos to add ">" before current selected pos
         self.program_surface.fill(self.background_color)
         self.message_to_screen("Welcome to Slither", self.snake_color, -100, "large")
-        self.message_to_screen("C to play", self.text_color_normal, 0, "med")
-        self.message_to_screen("O for options", self.text_color_normal, 40, "med")
-        self.message_to_screen("H for help", self.text_color_normal, 80, "med")
-        self.message_to_screen("Q to quit", self.text_color_normal, 120, "med")
+        self.message_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
+        self.message_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
+        self.message_to_screen("Options", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
+        self.message_to_screen("Quit", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
         pg.display.update()
 
     def main_menu(self):
-        # TODO: add arrow key support with matching moving icons
         # TODO: add mouse support?
         indicator_pos = 0
         number_of_entries = 3 # number of entries in menu - 1
@@ -118,27 +117,29 @@ class Snake():
                 if event.type == pg.QUIT:
                     self.shutdown()
                 elif event.type == pg.KEYDOWN:
-                    if event.key == pg.K_c:
-                        self.game_loop()
-                        self.draw_main_menu(indicator_pos)
-                    elif event.key == pg.K_q:
-                        self.shutdown()
-                    elif event.key == pg.K_o:
-                        self.options_menu()
-                        self.draw_main_menu(indicator_pos)
-                    elif event.key == pg.K_h:
-                        self.help_menu()
-                        self.draw_main_menu(indicator_pos)
+                    if event.key == pg.K_RETURN:
+                        if indicator_pos == 0:
+                            self.game_loop()
+                            self.draw_main_menu(indicator_pos)
+                        elif indicator_pos == 1:
+                            self.help_menu()
+                            self.draw_main_menu(indicator_pos)
+                        elif indicator_pos == 2:
+                            self.options_menu()
+                            self.draw_main_menu(indicator_pos)
+                        elif indicator_pos == 3:
+                            self.shutdown()
                     elif event.key == pg.K_DOWN:
                         indicator_pos += 1
                         if indicator_pos > number_of_entries:
                             indicator_pos = 0
+                        self.draw_main_menu(indicator_pos)
                     elif event.key == pg.K_UP:
                         indicator_pos -= 1
                         if indicator_pos < 0:
                             indicator_pos = number_of_entries
+                        self.draw_main_menu(indicator_pos)
 
-            
             # TODO: find optimal clock tick here
             # no need for high fps, just dont make the delay on keydown too long
             # Could remove clock.tick() entirely in menus, but that would cause the while
@@ -155,7 +156,7 @@ class Snake():
         pg.display.update()
 
     def options_menu(self):
-        # TODO: add more options
+        # TODO: add toggle graphics, possibly horizontal movement
         self.draw_options_menu()
 
         in_submenu = True
@@ -185,7 +186,7 @@ class Snake():
         self.message_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, 120)
         self.message_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 150)
         self.message_to_screen("Good luck!", self.text_color_normal, 180)
-        self.message_to_screen("> Back", self.text_color_normal, 250, "med")
+        self.message_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
         pg.display.update()
 
     def help_menu(self):
@@ -313,11 +314,18 @@ class Snake():
             text_surface = self.largefont.render(text, True, color) # render message, True (for anti-aliasing), color
         return text_surface, text_surface.get_rect()
 
-    def message_to_screen(self, msg, color, y_displace=0, size="small"):
+    def message_to_screen(self, msg, color, y_displace=0, size="small", show_indicator=False):
         # TODO: clean up text_objects and message_to_screen functions? possibly combine
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
+        if show_indicator:
+            self.indicator_to_screen(text_rect, color, size)
         self.program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
+
+    def indicator_to_screen(self, text_rect, color, size):
+         # text_rect = [x, y, width, height]
+         indicator = self.text_objects(">", color, size)[0] # first entry of (surface, rect) tuple
+         self.program_surface.blit(indicator, [text_rect.x - 50, text_rect.y]) # TODO: remove hardcoded offset of 50?
 
     def game_over_function(self):
         # Only paste text once
