@@ -34,6 +34,8 @@ BLOCK_SIZE = 20
 # TODO: Add different maps with obstacles?
 # TODO: Add different map sizes? small, medium, large
 # TODO: Resizeable game window? Need to think about desired behaviour of program_surface
+# TODO: bugfix not printing head on self collision
+# TODO: bugfix passing through self when boundaries are removed
 
 class Snake():
     def __init__(self):
@@ -274,6 +276,10 @@ class Snake():
         # [display_width, display_height, block_size, block_size], which would appear offscreen
         rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
         rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+        mod_list = [[x % DISPLAY_WIDTH, y % DISPLAY_HEIGHT] for [x,y] in self.snake_list]
+        while [rand_apple_x, rand_apple_y] in mod_list:
+            rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+            rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
         return rand_apple_x, rand_apple_y
 
     def print_score(self, score):
