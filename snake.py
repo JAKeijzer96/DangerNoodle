@@ -24,7 +24,16 @@ DISPLAY_HEIGHT = 600
 
 FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock tick.
          # increments depend on but are not equal to block_size. if they were this could mess up the grid system
+         # check for first upcoming multiple of block_size, then turn?
 BLOCK_SIZE = 20
+
+# TODO: Make proper start menu, with options and local highscore submenus, arrow key movement, possible mouse support
+# TODO: Add dark mode option
+# TODO: Add toggle for boundaries
+# TODO: Add local highscore file with related function
+# TODO: Add different maps with obstacles?
+# TODO: Add different map sizes? small, medium, large
+# TODO: Resizeable game window? Need to think about desired behaviour of program_surface
 
 class Snake():
     def __init__(self):
@@ -36,7 +45,7 @@ class Snake():
         # Initialize main program surface
         self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
         pg.display.set_caption("DangerNoodle - A very original game by Jasper")
-        pg.display.set_icon(self.icon) # TODO: add proper icon
+        pg.display.set_icon(self.icon)
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
         # Initialize fonts
@@ -51,6 +60,7 @@ class Snake():
     def reset_game_variables(self):
         self.game_over = False # True if snake is dead but program still running
         self.program_exit = False # True if program is quit
+        self.in_game = False # True if the user is actively playing snake
         self.lead_x = DISPLAY_WIDTH//2 # x-location of head, initially center of screen
         self.lead_y = DISPLAY_HEIGHT//2 # y-ocation of head, initially center of screen
         self.lead_x_change = 0 # Change in lead_x location every clock tick
@@ -62,7 +72,7 @@ class Snake():
         self.score = 0 # score, could use snake_length - base length but base length still not certain # TODO ?
         self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # TODO: refactor? also comment functionality
 
-    def game_intro(self):
+    def draw_main_menu(self):
         # Print introductory messages (start menu)
         self.program_surface.fill(WHITE)
         self.message_to_screen("Welcome to Slither", SNAKE_GREEN, -100, "large")
@@ -72,21 +82,43 @@ class Snake():
         self.message_to_screen("Press C to play, P to pause or Q to quit", BLACK, 180, "med")
         pg.display.update()
 
-        intro = True
-        while intro:
+    def main_menu(self):
+        # TODO: Add main_menu functionality
+        self.draw_main_menu()
+
+        while not self.program_exit:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
                     exit()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_c:
-                        intro = False
+                        self.game_loop()
+                        self.draw_main_menu()
                     elif event.key == pg.K_q:
                         pg.quit()
                         exit()
+                    elif event.key == pg.K_o:
+                        self.options_menu()
+                        self.draw_main_menu()
             
             # TODO: find optimal clock tick here
             self.clock.tick(15) # no need for high fps, just dont make the delay on keydown too long
+
+    def options_menu(self):
+        in_submenu = True
+        self.program_surface.fill(WHITE)
+        self.message_to_screen("Temporary Options menu", BLACK, -100, "large")
+        pg.display.update()
+
+        while in_submenu:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_BACKSPACE:
+                        in_submenu = False
+                elif event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
 
     def rand_apple_gen(self):
         # TODO: Make apple unable to spawn on/under snake
@@ -165,31 +197,37 @@ class Snake():
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
         self.program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
-    def game_loop(self):
-        while not self.program_exit:
-            if self.game_over: # only paste text once # TODO: is it possible to clean this up? merge if game_over and while game_over
-                #program_surface.fill(white)
-                self.message_to_screen("Game over", RED, y_displace=-50, size="large")
-                self.message_to_screen("Press C to play again or Q to quit", BLACK, 50, size="med")
-                pg.display.update()
-                
-            while self.game_over:
-                for event in pg.event.get():
-                    if event.type == pg.QUIT:
-                        self.program_exit = True
-                        self.game_over = False
-                    elif event.type == pg.KEYDOWN:
-                        if event.key == pg.K_q:
-                            self.program_exit = True
-                            self.game_over = False
-                        elif event.key == pg.K_c:
-                            self.reset_game_variables()
-                            self.game_loop() # TODO: restart game loop without re-initializing class
-
-
-            for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
+    def game_over_function(self):
+        # Only paste text once
+        self.message_to_screen("Game over", RED, y_displace=-50, size="large")
+        self.message_to_screen("Press C to play again, Q to quit or BACKSPACE to return to main menu", BLACK, 50, size="med")
+        pg.display.update()
+        
+        while self.game_over:
+            for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.program_exit = True
+                    self.game_over = False
+                elif event.type == pg.KEYDOWN:
+                    if event.key == pg.K_q:
+                        pg.quit()
+                        exit()
+                    elif event.key == pg.K_c:
+                        # Reset variables, then reset in_game to True to return to game_loop()
+                        self.reset_game_variables()
+                        self.in_game = True
+                    elif event.key == pg.K_BACKSPACE:
+                        # Reset variables, inclucing in_game to False to exit out of game_loop()
+                        # and return to main_menu()
+                        self.reset_game_variables()
+
+    def game_loop(self):
+        self.in_game = True
+        while self.in_game:
+            for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    exit()
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_LEFT:
                         if self.lead_x_change == BLOCK_SIZE: # disallow running into self
@@ -236,36 +274,35 @@ class Snake():
             if len(self.snake_list) >  self.snake_length:
                 del self.snake_list[0] # remove the first (oldest) element of the list
             
+            # If snake_head overlaps with any other segment of the snake, game over
             for segment in self.snake_list[:-1]:
                 if segment == snake_head:
                     self.game_over = True
 
-
             self.snake(BLOCK_SIZE, self.snake_list)
             self.print_score(self.score)
+
+            # Collision checking for grid-based and same-size apple/snake
+            if self.lead_x == self.rand_apple_x and self.lead_y == self.rand_apple_y:
+                self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+                self.snake_length += 1
+                self.score += 1
+
+            # Non grid-based collision checking for any size snake/apple
+            # if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
+            #     and self.lead_x < self.rand_apple_x + BLOCK_SIZE and self.lead_y < self.rand_apple_y + BLOCK_SIZE):
+            #     self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+            #     self.snake_length += 1
+            #     self.score += 1
+
             pg.display.update() # update the display
-
-            # Collision for small snake, big apple
-            # if lead_x >= rand_apple_x and lead_x <= rand_apple_x + apple_thickness:
-            #     if lead_y >= rand_apple_y and lead_y <= rand_apple_y + apple_thickness:
-            #         rand_apple_x = round(randint(0, display_width - block_size)) # / 10) * 10 # round to nearest 10
-            #         rand_apple_y = round(randint(0, display_height - block_size)) # / 10) * 10 # round to nearest 10
-            #         snake_length += 1
-
-            # Updated collision for any size snake/apple
-            # TODO: move back to grid-based collision
-            if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
-                and self.lead_x < self.rand_apple_x + BLOCK_SIZE and self.lead_y < self.rand_apple_y + BLOCK_SIZE):
-                    self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
-                    self.snake_length += 1
-                    self.score += 1
-
             self.clock.tick(FPS) # tick(x) for a game of x frames per second, put this after display.update()
 
-        pg.quit() # uninitialize pygame
-        exit() # quit the program
+            if self.game_over:
+                self.game_over_function()
+
 
 if __name__ == "__main__":
     snek = Snake()
-    snek.game_intro()
+    snek.main_menu()
     snek.game_loop()
