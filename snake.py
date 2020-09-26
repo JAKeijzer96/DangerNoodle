@@ -61,6 +61,10 @@ class Snake():
         # Call function to reset game variables, in this case initializing them
         self.reset_game_variables()
 
+        """remove this later"""
+        # TODO: save dark mode (and other settings) in settings file
+        self.toggle_dark_mode()
+
         
     # Function to initialize game variables at the start, or reset them on game_over
     def reset_game_variables(self):
@@ -198,11 +202,10 @@ class Snake():
     def rotate(self, img, degrees):
         return pg.transform.rotate(img, degrees)
 
-    def snake(self, snake_list):
+    def draw_snake(self):
         draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without raising index errors
-
-        self.program_surface.blit(self.head, (self.snake_list[-1][0] % DISPLAY_WIDTH, self.snake_list[-1][1] % DISPLAY_HEIGHT)) # blit the snake head image
         
+        # TODO: If tail calculations cannot be simplified, move them to seperate function
         if len(self.snake_list) > 1: # TODO: code snake to appear fully on game start instead of being generated from the spawning point
                                      # This would remove the need for checking if len(snake_list) > 1
                                      # Currently snake_list is always > 1, except for the very first frame of the game
@@ -243,6 +246,11 @@ class Snake():
         for x_and_y in self.snake_list[draw_tail:-1]: # the last element is the head, so dont put a square there
             pg.draw.rect(self.program_surface, self.snake_color,
                     [x_and_y[0] % DISPLAY_WIDTH, x_and_y[1] % DISPLAY_HEIGHT, BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
+        
+        # blit the snake head image last, so it still shows after self-collision
+        # check for game_over to not print the head on the other side of the screen after wall collision
+        if not self.game_over:
+            self.program_surface.blit(self.head, (self.snake_list[-1][0] % DISPLAY_WIDTH, self.snake_list[-1][1] % DISPLAY_HEIGHT))
 
     def text_objects(self, text, color, size):
         if size == "small":
@@ -335,19 +343,19 @@ class Snake():
             self.program_surface.fill(self.background_color)
             self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
             
-            # TODO: check if this is needed or double functionality
-            snake_head = [self.lead_x, self.lead_y]
-            self.snake_list.append(snake_head)
+            self.snake_list.append([self.lead_x, self.lead_y])
             
+            # TODO: check if this is needed fixing other issue where tail is only drawn on second clocktick.
+            # Suspect that the if-statement can then be removed, leaving just del statement
             if len(self.snake_list) >  self.snake_length:
                 del self.snake_list[0] # remove the first (oldest) element of the list
             
-            # If snake_head overlaps with any other segment of the snake, game over
+            # If the head overlaps with any other segment of the snake, game over
             for segment in self.snake_list[:-1]:
-                if segment == snake_head:
+                if segment == [self.lead_x, self.lead_y]:
                     self.game_over = True
 
-            self.snake(self.snake_list)
+            self.draw_snake()
             self.print_score(self.score)
 
             # Collision checking for grid-based and same-size apple/snake
