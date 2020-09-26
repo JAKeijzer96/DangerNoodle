@@ -17,6 +17,7 @@ WHITE = (255, 255, 255)
 GREY = (140, 140, 140)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 SNAKE_GREEN = (0, 155, 0) # Not bright green
 FONT = "./Gasalt-Black.ttf"
 
@@ -65,9 +66,11 @@ class Snake():
         # Initialize options, changeable in options menu
         self.background_color = WHITE
         self.text_color_normal = BLACK
-        self.text_color_emphasis = RED
+        self.text_color_emphasis_bad = RED
+        self.text_color_emphasis_good = GREEN
         self.snake_color = SNAKE_GREEN
         self.boundaries = True
+        self.dark_mode = False
         # Call function to reset game variables, in this case initializing them
         self.reset_game_variables()
 
@@ -118,6 +121,7 @@ class Snake():
                     self.shutdown()
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_RETURN:
+                        # When enter is pressed, execute code depending on indicator position
                         if indicator_pos == 0:
                             self.game_loop()
                             self.draw_main_menu(indicator_pos)
@@ -129,6 +133,7 @@ class Snake():
                             self.draw_main_menu(indicator_pos)
                         elif indicator_pos == 3:
                             self.shutdown()
+                    # Move indicator position up/down with arrow keys, wrap when exceeding entry number
                     elif event.key == pg.K_DOWN:
                         indicator_pos += 1
                         if indicator_pos > number_of_entries:
@@ -148,20 +153,31 @@ class Snake():
             
 
     def draw_options_menu(self, ind_pos):
+        # Set the correct colors for whether or not dark mode/edges are enabled/disabled
+        bound_enabled_txt_color = self.text_color_emphasis_good
+        bound_disabled_txt_color = self.text_color_emphasis_bad
+        if not self.boundaries:
+            bound_enabled_txt_color = self.text_color_emphasis_bad
+            bound_disabled_txt_color = self.text_color_emphasis_good
+        dark_enabled_txt_color = self.text_color_emphasis_bad
+        dark_disabled_txt_color = self.text_color_emphasis_good
+        if self.dark_mode:
+            dark_enabled_txt_color = self.text_color_emphasis_good
+            dark_disabled_txt_color = self.text_color_emphasis_bad
+
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("Options", self.text_color_normal, -100, "large")
         self.center_msg_to_screen("Dark mode:", self.text_color_normal)
-        self.msg_to_screen("Enabled", self.text_color_emphasis, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[0,0])
-        self.msg_to_screen("Disabled", self.text_color_emphasis, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[1,0])
+        self.msg_to_screen("Enabled", dark_enabled_txt_color, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[0,0])
+        self.msg_to_screen("Disabled", dark_disabled_txt_color, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[1,0])
         
-        self.center_msg_to_screen(f"Edge boundaries. Currently: {self.boundaries}", self.text_color_normal, 100)
-        self.msg_to_screen("Enabled", self.text_color_emphasis, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[0,1])
-        self.msg_to_screen("Disabled", self.text_color_emphasis, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[1,1])
+        self.center_msg_to_screen(f"Edge boundaries", self.text_color_normal, 100)
+        self.msg_to_screen("Enabled", bound_enabled_txt_color, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[0,1])
+        self.msg_to_screen("Disabled", bound_disabled_txt_color, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[1,1])
         self.center_msg_to_screen("Return to main menu", self.text_color_normal, 250, show_indicator=ind_pos[1]==2)
         pg.display.update()
 
     def options_menu(self):
-        # TODO: add toggle graphics, possibly horizontal movement
         indicator_pos = [0,0]
         number_of_vert_entries = 2 # number of vert entries in menu - 1
         number_of_hor_entries = 1 # number of hor entries in menu - 1
@@ -172,6 +188,7 @@ class Snake():
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_RETURN:
+                        # When the user hits enter, execute code depending on indicator position
                         if indicator_pos == [0,0]:
                             self.toggle_dark_mode(True)
                             self.draw_options_menu(indicator_pos)
@@ -186,6 +203,7 @@ class Snake():
                             self.draw_options_menu(indicator_pos)
                         elif indicator_pos[1] == 2:
                             in_submenu = False
+                    # Move indicator position with arrow keys, wrap when exceeding entry number 
                     if event.key == pg.K_RIGHT:
                         indicator_pos[0] += 1
                         if indicator_pos[0] > number_of_hor_entries:
@@ -206,14 +224,6 @@ class Snake():
                         if indicator_pos[1] < 0:
                             indicator_pos[1] = number_of_vert_entries
                         self.draw_options_menu(indicator_pos)
-                    # if event.key == pg.K_BACKSPACE:
-                    #     in_submenu = False
-                    # elif event.key == pg.K_d:
-                    #     self.toggle_dark_mode()
-                    #     self.draw_options_menu(indicator_pos)
-                    # elif event.key == pg.K_b:
-                    #     self.boundaries = not self.boundaries
-                    #     self.draw_options_menu(indicator_pos)
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
@@ -221,6 +231,7 @@ class Snake():
             self.clock.tick(15)
     
     def draw_help_menu(self):
+        # TODO: Move all (sub)menus up a bit? But stay consistent
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("Help", self.text_color_normal, -100, "large")
         self.center_msg_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, 30 )
@@ -248,18 +259,14 @@ class Snake():
     
     def toggle_dark_mode(self, enable):
         if enable:
+            self.dark_mode = True
             self.background_color = BLACK
             self.text_color_normal = WHITE
-            # TODO: Find alternative emphasis color?
-            #self.text_color_emphasis = RED
-            # TODO: Add alternative snake color?
-            #self.snake_color = SNAKE_GREEN
         else:
+            self.dark_mode = False
             self.background_color = WHITE
             self.text_color_normal = BLACK
-            #self.text_color_emphasis = RED
-            #self.snake_color = SNAKE_GREEN
-
+            
     def rand_apple_gen(self):
         # TODO: Make apple unable to spawn on/under snake
 
@@ -345,6 +352,7 @@ class Snake():
         
         # blit the snake head image last, so it still shows after self-collision
         # check for game_over to not print the head on the other side of the screen after wall collision
+        # TODO: Fix bug where now it also doesn't print head on self collision
         if not self.game_over:
             self.program_surface.blit(self.head, (self.snake_list[-1][0] % DISPLAY_WIDTH, self.snake_list[-1][1] % DISPLAY_HEIGHT))
 
@@ -362,7 +370,7 @@ class Snake():
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
         if show_indicator:
-            self.indicator_to_screen(text_rect, color, size, indicator_offset)
+            self.indicator_to_screen(text_rect, size, indicator_offset)
         self.program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
     def msg_to_screen(self, msg, color, x_coord, y_coord, size="small", show_indicator=False, indicator_offset=-50):
@@ -370,17 +378,17 @@ class Snake():
         text_rect.x = x_coord
         text_rect.y = y_coord
         if show_indicator:
-            self.indicator_to_screen(text_rect, color, size, indicator_offset)
+            self.indicator_to_screen(text_rect, size, indicator_offset)
         self.program_surface.blit(text_surface, text_rect)
 
-    def indicator_to_screen(self, text_rect, color, size, offset):
+    def indicator_to_screen(self, text_rect, size, offset):
          # text_rect = [x, y, width, height]
-         indicator = self.text_objects(">", color, size)[0] # first entry of (surface, rect) tuple
+         indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
          self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y]) # TODO: remove hardcoded offset of 50?
 
     def game_over_function(self):
         # Only paste text once
-        self.center_msg_to_screen("Game over", self.text_color_emphasis, y_displace=-50, size="large")
+        self.center_msg_to_screen("Game over", self.text_color_emphasis_bad, y_displace=-50, size="large")
         self.center_msg_to_screen("Press C to play again, Q to quit", self.text_color_normal, 50, size="med")
         self.center_msg_to_screen("or BACKSPACE to return to main menu", self.text_color_normal, 100, size="med")
         pg.display.update()
