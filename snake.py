@@ -18,7 +18,7 @@ GREY = (140, 140, 140)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 SNAKE_GREEN = (0, 155, 0) # Not bright green
-REGULAR_FONT = "./Gasalt-Regular.ttf"
+FONT = "./Gasalt-Black.ttf"
 
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
@@ -29,7 +29,6 @@ FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock t
 BLOCK_SIZE = 20
 
 # TODO: Make proper start menu, with options and local highscore submenus, arrow key movement, possible mouse support
-# TODO: Add toggle for boundaries
 # TODO: Add local highscore file with related function
 # TODO: Add different maps with obstacles?
 # TODO: Add different map sizes? small, medium, large
@@ -38,10 +37,15 @@ BLOCK_SIZE = 20
 class Snake():
     def __init__(self):
         # Load images
-        self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
-        self.head_img = pg.image.load("snakehead.png") # block_size x block_size pixels
-        self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
-        self.tail_img = pg.image.load("snaketail.png") # block_size x block_size pixels
+        try:
+            self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
+            self.head_img = pg.image.load("snakehead.png") # block_size x block_size pixels
+            self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
+            self.tail_img = pg.image.load("snaketail.png") # block_size x block_size pixels
+        except pg.error as e:
+            print(f"Error: One or more sprites could not be located\n{e}")
+            print("Shutting down")
+            self.shutdown()
         # Initialize main program surface
         self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
         pg.display.set_caption("DangerNoodle - A very original game by Jasper")
@@ -49,9 +53,15 @@ class Snake():
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
         # Initialize fonts
-        self.smallfont = pg.font.Font(REGULAR_FONT, 25) # TODO: find prettier font and matching sizes
-        self.medfont = pg.font.Font(REGULAR_FONT, 40) # size 50
-        self.largefont = pg.font.Font(REGULAR_FONT, 80) # size 80
+        try:
+            self.smallfont = pg.font.Font(FONT, 30) # TODO: find prettier font and matching sizes
+            self.medfont = pg.font.Font(FONT, 40) # size 50
+            self.largefont = pg.font.Font(FONT, 80) # size 80
+        except FileNotFoundError as e:
+            print(f"Error: Font could not be located\nProceeding with default system font\n{e}")
+            self.smallfont = pg.font.SysFont(None, 30, bold=1)
+            self.medfont = pg.font.SysFont(None, 40, bold=1)
+            self.largefont = pg.font.SysFont(None, 80, bold=1)
         # Initialize options, changeable in options menu
         self.background_color = WHITE
         self.text_color_normal = BLACK
@@ -86,19 +96,22 @@ class Snake():
         pg.quit()
         exit()
 
-    def draw_main_menu(self):
-        # Print introductory messages (start menu)
+    def draw_main_menu(self, indicator_pos):
+        # TODO: integrate indicator_pos to add ">" before current selected pos
         self.program_surface.fill(self.background_color)
         self.message_to_screen("Welcome to Slither", self.snake_color, -100, "large")
-        self.message_to_screen("The objective of the game is to eat red apples", self.text_color_normal, -30, "med")
-        self.message_to_screen("The more apples you eat, the longer you get", self.text_color_normal, 0, "med")
-        self.message_to_screen("If you run into yourself or the edges, you die", self.text_color_normal, 30, "med")
-        self.message_to_screen("Press C to play, O for options, P to pause or Q to quit", self.text_color_normal, 180, "med")
+        self.message_to_screen("C to play", self.text_color_normal, 0, "med")
+        self.message_to_screen("O for options", self.text_color_normal, 40, "med")
+        self.message_to_screen("H for help", self.text_color_normal, 80, "med")
+        self.message_to_screen("Q to quit", self.text_color_normal, 120, "med")
         pg.display.update()
 
     def main_menu(self):
-        # TODO: Add main_menu functionality
-        self.draw_main_menu()
+        # TODO: add arrow key support with matching moving icons
+        # TODO: add mouse support?
+        indicator_pos = 0
+        number_of_entries = 3 # number of entries in menu - 1
+        self.draw_main_menu(indicator_pos)
 
         while not self.program_exit:
             for event in pg.event.get():
@@ -107,12 +120,24 @@ class Snake():
                 elif event.type == pg.KEYDOWN:
                     if event.key == pg.K_c:
                         self.game_loop()
-                        self.draw_main_menu()
+                        self.draw_main_menu(indicator_pos)
                     elif event.key == pg.K_q:
                         self.shutdown()
                     elif event.key == pg.K_o:
                         self.options_menu()
-                        self.draw_main_menu()
+                        self.draw_main_menu(indicator_pos)
+                    elif event.key == pg.K_h:
+                        self.help_menu()
+                        self.draw_main_menu(indicator_pos)
+                    elif event.key == pg.K_DOWN:
+                        indicator_pos += 1
+                        if indicator_pos > number_of_entries:
+                            indicator_pos = 0
+                    elif event.key == pg.K_UP:
+                        indicator_pos -= 1
+                        if indicator_pos < 0:
+                            indicator_pos = number_of_entries
+
             
             # TODO: find optimal clock tick here
             # no need for high fps, just dont make the delay on keydown too long
@@ -123,13 +148,14 @@ class Snake():
 
     def draw_options_menu(self):
         self.program_surface.fill(self.background_color)
-        self.message_to_screen("Temporary Options menu", self.text_color_normal, -100, "large")
+        self.message_to_screen("Options", self.text_color_normal, -100, "large")
         self.message_to_screen("Press D to toggle dark mode", self.text_color_normal)
         self.message_to_screen(f"Press B to toggle edge boundaries. Currently: {self.boundaries}", self.text_color_normal, 50)
         self.message_to_screen("Press BACKSPACE to return to main menu", self.text_color_normal, 250)
         pg.display.update()
 
     def options_menu(self):
+        # TODO: add more options
         self.draw_options_menu()
 
         in_submenu = True
@@ -149,6 +175,32 @@ class Snake():
             
             # TODO: find optimal clock tick here
             self.clock.tick(15)
+    
+    def draw_help_menu(self):
+        self.program_surface.fill(self.background_color)
+        self.message_to_screen("Help", self.text_color_normal, -100, "large")
+        self.message_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, 30 )
+        self.message_to_screen("the game is to eat as many apples as possible, without running", self.text_color_normal, 60)
+        self.message_to_screen("into yourself or the walls. Your size increases with every", self.text_color_normal, 90)
+        self.message_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, 120)
+        self.message_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 150)
+        self.message_to_screen("Good luck!", self.text_color_normal, 180)
+        self.message_to_screen("> Back", self.text_color_normal, 250, "med")
+        pg.display.update()
+
+    def help_menu(self):
+        self.draw_help_menu()
+
+        in_submenu = True
+        while in_submenu:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        in_submenu = False
+                elif event.type == pg.QUIT:
+                    self.shutdown()
+            
+            self.clock.tick(15) # TODO: find optimal fps here
     
     def toggle_dark_mode(self):
         if self.background_color == WHITE:
