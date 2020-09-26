@@ -73,7 +73,7 @@ class Snake():
 
         """remove this later"""
         # TODO: save dark mode (and other settings) in settings file
-        self.toggle_dark_mode()
+        self.toggle_dark_mode(True)
 
         
     # Function to initialize game variables at the start, or reset them on game_over
@@ -99,11 +99,11 @@ class Snake():
     def draw_main_menu(self, ind_pos):
         # TODO: integrate indicator_pos to add ">" before current selected pos
         self.program_surface.fill(self.background_color)
-        self.message_to_screen("Welcome to Slither", self.snake_color, -100, "large")
-        self.message_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
-        self.message_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
-        self.message_to_screen("Options", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
-        self.message_to_screen("Quit", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
+        self.center_msg_to_screen("Welcome to Slither", self.snake_color, -100, "large")
+        self.center_msg_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
+        self.center_msg_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
+        self.center_msg_to_screen("Options", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
+        self.center_msg_to_screen("Quit", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
         pg.display.update()
 
     def main_menu(self):
@@ -147,30 +147,73 @@ class Snake():
             self.clock.tick(15)
             
 
-    def draw_options_menu(self):
+    def draw_options_menu(self, ind_pos):
         self.program_surface.fill(self.background_color)
-        self.message_to_screen("Options", self.text_color_normal, -100, "large")
-        self.message_to_screen("Press D to toggle dark mode", self.text_color_normal)
-        self.message_to_screen(f"Press B to toggle edge boundaries. Currently: {self.boundaries}", self.text_color_normal, 50)
-        self.message_to_screen("Press BACKSPACE to return to main menu", self.text_color_normal, 250)
+        self.center_msg_to_screen("Options", self.text_color_normal, -100, "large")
+        self.center_msg_to_screen("Dark mode:", self.text_color_normal)
+        self.msg_to_screen("Enabled", self.text_color_emphasis, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[0,0])
+        self.msg_to_screen("Disabled", self.text_color_emphasis, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[1,0])
+        
+        self.center_msg_to_screen(f"Edge boundaries. Currently: {self.boundaries}", self.text_color_normal, 100)
+        self.msg_to_screen("Enabled", self.text_color_emphasis, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[0,1])
+        self.msg_to_screen("Disabled", self.text_color_emphasis, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 120, show_indicator=ind_pos==[1,1])
+        self.center_msg_to_screen("Return to main menu", self.text_color_normal, 250, show_indicator=ind_pos[1]==2)
         pg.display.update()
 
     def options_menu(self):
         # TODO: add toggle graphics, possibly horizontal movement
-        self.draw_options_menu()
+        indicator_pos = [0,0]
+        number_of_vert_entries = 2 # number of vert entries in menu - 1
+        number_of_hor_entries = 1 # number of hor entries in menu - 1
+        self.draw_options_menu(indicator_pos)
 
         in_submenu = True
         while in_submenu:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_BACKSPACE:
-                        in_submenu = False
-                    elif event.key == pg.K_d:
-                        self.toggle_dark_mode()
-                        self.draw_options_menu()
-                    elif event.key == pg.K_b:
-                        self.boundaries = not self.boundaries
-                        self.draw_options_menu()
+                    if event.key == pg.K_RETURN:
+                        if indicator_pos == [0,0]:
+                            self.toggle_dark_mode(True)
+                            self.draw_options_menu(indicator_pos)
+                        elif indicator_pos == [1,0]:
+                            self.toggle_dark_mode(False)
+                            self.draw_options_menu(indicator_pos)
+                        elif indicator_pos == [0,1]:
+                            self.boundaries = True
+                            self.draw_options_menu(indicator_pos)
+                        elif indicator_pos == [1,1]:
+                            self.boundaries = False
+                            self.draw_options_menu(indicator_pos)
+                        elif indicator_pos[1] == 2:
+                            in_submenu = False
+                    if event.key == pg.K_RIGHT:
+                        indicator_pos[0] += 1
+                        if indicator_pos[0] > number_of_hor_entries:
+                            indicator_pos[0] = 0
+                        self.draw_options_menu(indicator_pos)
+                    elif event.key == pg.K_LEFT:
+                        indicator_pos[0] -= 1
+                        if indicator_pos[0] < 0:
+                            indicator_pos[0] = number_of_hor_entries
+                        self.draw_options_menu(indicator_pos)
+                    elif event.key == pg.K_DOWN:
+                        indicator_pos[1] += 1
+                        if indicator_pos[1] > number_of_vert_entries:
+                            indicator_pos[1] = 0
+                        self.draw_options_menu(indicator_pos)
+                    elif event.key == pg.K_UP:
+                        indicator_pos[1] -= 1
+                        if indicator_pos[1] < 0:
+                            indicator_pos = number_of_vert_entries
+                        self.draw_options_menu(indicator_pos)
+                    # if event.key == pg.K_BACKSPACE:
+                    #     in_submenu = False
+                    # elif event.key == pg.K_d:
+                    #     self.toggle_dark_mode()
+                    #     self.draw_options_menu(indicator_pos)
+                    # elif event.key == pg.K_b:
+                    #     self.boundaries = not self.boundaries
+                    #     self.draw_options_menu(indicator_pos)
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
@@ -179,14 +222,14 @@ class Snake():
     
     def draw_help_menu(self):
         self.program_surface.fill(self.background_color)
-        self.message_to_screen("Help", self.text_color_normal, -100, "large")
-        self.message_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, 30 )
-        self.message_to_screen("the game is to eat as many apples as possible, without running", self.text_color_normal, 60)
-        self.message_to_screen("into yourself or the walls. Your size increases with every", self.text_color_normal, 90)
-        self.message_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, 120)
-        self.message_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 150)
-        self.message_to_screen("Good luck!", self.text_color_normal, 180)
-        self.message_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
+        self.center_msg_to_screen("Help", self.text_color_normal, -100, "large")
+        self.center_msg_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, 30 )
+        self.center_msg_to_screen("the game is to eat as many apples as possible, without running", self.text_color_normal, 60)
+        self.center_msg_to_screen("into yourself or the walls. Your size increases with every", self.text_color_normal, 90)
+        self.center_msg_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, 120)
+        self.center_msg_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 150)
+        self.center_msg_to_screen("Good luck!", self.text_color_normal, 180)
+        self.center_msg_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
         pg.display.update()
 
     def help_menu(self):
@@ -203,8 +246,8 @@ class Snake():
             
             self.clock.tick(15) # TODO: find optimal fps here
     
-    def toggle_dark_mode(self):
-        if self.background_color == WHITE:
+    def toggle_dark_mode(self, enable):
+        if enable:
             self.background_color = BLACK
             self.text_color_normal = WHITE
             # TODO: Find alternative emphasis color?
@@ -232,8 +275,8 @@ class Snake():
 
     def pause(self):
         # Update once when paused, then only check for event handling
-        self.message_to_screen("Paused", self.text_color_normal, -100, size="large")
-        self.message_to_screen("Press C to continue, Q to quit or BACKSPACE to return to the main menu", self.text_color_normal)
+        self.center_msg_to_screen("Paused", self.text_color_normal, -100, size="large")
+        self.center_msg_to_screen("Press C to continue, Q to quit or BACKSPACE to return to the main menu", self.text_color_normal)
         pg.display.update()
         
         paused = True
@@ -314,24 +357,32 @@ class Snake():
             text_surface = self.largefont.render(text, True, color) # render message, True (for anti-aliasing), color
         return text_surface, text_surface.get_rect()
 
-    def message_to_screen(self, msg, color, y_displace=0, size="small", show_indicator=False):
-        # TODO: clean up text_objects and message_to_screen functions? possibly combine
+    def center_msg_to_screen(self, msg, color, y_displace=0, size="small", show_indicator=False, indicator_offset=-50):
+        # TODO: clean up text_objects and center_msg_to_screen functions? possibly combine
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
         if show_indicator:
-            self.indicator_to_screen(text_rect, color, size)
+            self.indicator_to_screen(text_rect, color, size, indicator_offset)
         self.program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
-    def indicator_to_screen(self, text_rect, color, size):
+    def msg_to_screen(self, msg, color, x_coord, y_coord, size="small", show_indicator=False, indicator_offset=-50):
+        text_surface, text_rect = self.text_objects(msg, color, size)
+        text_rect.x = x_coord
+        text_rect.y = y_coord
+        if show_indicator:
+            self.indicator_to_screen(text_rect, color, size, indicator_offset)
+        self.program_surface.blit(text_surface, text_rect)
+
+    def indicator_to_screen(self, text_rect, color, size, offset):
          # text_rect = [x, y, width, height]
          indicator = self.text_objects(">", color, size)[0] # first entry of (surface, rect) tuple
-         self.program_surface.blit(indicator, [text_rect.x - 50, text_rect.y]) # TODO: remove hardcoded offset of 50?
+         self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y]) # TODO: remove hardcoded offset of 50?
 
     def game_over_function(self):
         # Only paste text once
-        self.message_to_screen("Game over", self.text_color_emphasis, y_displace=-50, size="large")
-        self.message_to_screen("Press C to play again, Q to quit", self.text_color_normal, 50, size="med")
-        self.message_to_screen("or BACKSPACE to return to main menu", self.text_color_normal, 100, size="med")
+        self.center_msg_to_screen("Game over", self.text_color_emphasis, y_displace=-50, size="large")
+        self.center_msg_to_screen("Press C to play again, Q to quit", self.text_color_normal, 50, size="med")
+        self.center_msg_to_screen("or BACKSPACE to return to main menu", self.text_color_normal, 100, size="med")
         pg.display.update()
         
         while self.game_over:
