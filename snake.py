@@ -24,9 +24,11 @@ FONT = "./Gasalt-Black.ttf"
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
 
-FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock tick.
+
+GAME_FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock tick.
          # increments depend on but are not equal to block_size. if they were this could mess up the grid system
          # check for first upcoming multiple of block_size, then turn?
+MENU_FPS = 15
 BLOCK_SIZE = 20
 
 # TODO: Make proper start menu, with options and local highscore submenus, arrow key movement, possible mouse support
@@ -94,7 +96,6 @@ class Snake():
         self.snake_length = 2 # max allowed length of the snake
         self.head = self.rotate(self.head_img, 180) # starting direction is down
         #self.tail = self.tail_img
-        self.score = 0 # score, could use snake_length - base length but base length still not certain # TODO ?
         self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # TODO: refactor? also comment functionality
     
     def shutdown(self):
@@ -147,11 +148,10 @@ class Snake():
                             indicator_pos = number_of_entries
                         self.draw_main_menu(indicator_pos)
 
-            # TODO: find optimal clock tick here
             # no need for high fps, just dont make the delay on keydown too long
             # Could remove clock.tick() entirely in menus, but that would cause the while
             # loop to run as fast as it can, demanding a lot of unnecessary resources
-            self.clock.tick(15)
+            self.clock.tick(MENU_FPS)
             
 
     def draw_options_menu(self, ind_pos):
@@ -229,8 +229,7 @@ class Snake():
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
-            # TODO: find optimal clock tick here
-            self.clock.tick(15)
+            self.clock.tick(MENU_FPS)
     
     def draw_help_menu(self):
         # TODO: Move all (sub)menus up a bit? But stay consistent
@@ -257,8 +256,96 @@ class Snake():
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
-            self.clock.tick(15) # TODO: find optimal fps here
+            self.clock.tick(MENU_FPS)
     
+    def draw_pause_menu(self, ind_pos):
+        # Re-draw the background images to create a transparent pause menu
+        self.draw_in_game_screen()
+        # Update once when paused, then only check for event handling
+        self.center_msg_to_screen("Game paused", self.text_color_normal, -50, size="large")
+        self.center_msg_to_screen("Continue", self.text_color_normal, 50, size="med", show_indicator=ind_pos==0)
+        self.center_msg_to_screen("Main menu", self.text_color_normal, 100, size="med", show_indicator=ind_pos==1)
+        self.center_msg_to_screen("Quit", self.text_color_normal, 150, size="med", show_indicator=ind_pos==2)
+        pg.display.update()
+
+    def pause_menu(self):
+        paused = True
+        indicator_pos = 0
+        number_of_entries = 2 # number of menu entries - 1
+        self.draw_pause_menu(indicator_pos)
+
+        while paused:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        if indicator_pos == 0:
+                            paused = False
+                        elif indicator_pos == 1:
+                            self.reset_game_variables()
+                            paused = False
+                        elif indicator_pos == 2:
+                            self.shutdown()
+                    elif event.key == pg.K_DOWN:
+                        indicator_pos += 1
+                        if indicator_pos > number_of_entries:
+                            indicator_pos = 0
+                        self.draw_pause_menu(indicator_pos)
+                    elif event.key == pg.K_UP:
+                        indicator_pos -= 1
+                        if indicator_pos < 0:
+                            indicator_pos = number_of_entries
+                        self.draw_pause_menu(indicator_pos)
+                elif event.type == pg.QUIT:
+                    self.shutdown()
+            self.clock.tick(MENU_FPS) # dont need high fps
+
+    def draw_game_over_menu(self, ind_pos):
+        # Re-draw the background images to create a transparent game over menu
+        self.draw_in_game_screen()
+        # Only paste text once
+        self.center_msg_to_screen("Game over", self.text_color_emphasis_bad, y_displace=-50, size="large")
+        self.center_msg_to_screen("Play again", self.text_color_normal, 50, size="med", show_indicator=ind_pos==0)
+        self.center_msg_to_screen("Main menu", self.text_color_normal, 100, size="med", show_indicator=ind_pos==1)
+        self.center_msg_to_screen("Quit", self.text_color_normal, 150, size="med", show_indicator=ind_pos==2)
+        pg.display.update()
+    
+    def game_over_menu(self):
+        indicator_pos = 0
+        number_of_entries = 2 # number of menu entries - 1
+        self.draw_game_over_menu(indicator_pos)
+        while self.game_over:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        if indicator_pos == 0:
+                            # Reset variables, then reset in_game to True to return to game_loop()
+                            self.reset_game_variables()
+                            self.in_game = True
+                        elif indicator_pos == 1:
+                            # Reset variables, inclucing in_game to False to exit out of game_loop()
+                            # and return to main_menu()
+                            self.reset_game_variables()
+                        elif indicator_pos == 2:
+                            self.shutdown()
+                    elif event.key == pg.K_DOWN:
+                        indicator_pos += 1
+                        if indicator_pos > number_of_entries:
+                            indicator_pos = 0
+                        self.draw_game_over_menu(indicator_pos)
+                    elif event.key == pg.K_UP:
+                        indicator_pos -= 1
+                        if indicator_pos < 0:
+                            indicator_pos = number_of_entries
+                        self.draw_game_over_menu(indicator_pos)
+
+                elif event.type == pg.QUIT:
+                    self.shutdown()
+
+    def draw_score(self):
+        # Score is the current snake length - starting length, currently 2
+        text = self.smallfont.render(f"Score: {self.snake_length - 2}", True, self.text_color_normal)
+        self.program_surface.blit(text, [0,0])
+
     def toggle_dark_mode(self, enable):
         if enable:
             self.dark_mode = True
@@ -270,46 +357,16 @@ class Snake():
             self.text_color_normal = BLACK
             
     def rand_apple_gen(self):
-        # TODO: Make apple unable to spawn on/under snake
-
         # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
         # [display_width, display_height, block_size, block_size], which would appear offscreen
         rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
         rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+        # Disallow apple to spawn under snake, modulo operator for when snake is past screen boundaries
         mod_list = [[x % DISPLAY_WIDTH, y % DISPLAY_HEIGHT] for [x,y] in self.snake_list]
         while [rand_apple_x, rand_apple_y] in mod_list:
             rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
             rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
         return rand_apple_x, rand_apple_y
-
-    def print_score(self, score):
-        text = self.smallfont.render(f"Score: {score}", True, self.text_color_normal)
-        self.program_surface.blit(text, [0,0])
-
-    def pause(self):
-        # Update once when paused, then only check for event handling
-        self.center_msg_to_screen("Paused", self.text_color_normal, -100, size="large")
-        self.center_msg_to_screen("Press C to continue, Q to quit or BACKSPACE to return to the main menu", self.text_color_normal)
-        pg.display.update()
-        
-        paused = True
-        while paused:
-            for event in pg.event.get():
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_c:
-                        paused = False
-                    elif event.key == pg.K_BACKSPACE:
-                        self.reset_game_variables()
-                        paused = False
-                    elif event.key == pg.K_q:
-                        self.shutdown()
-                elif event.type == pg.QUIT:
-                    self.shutdown()
-            # TODO: find optimal fps here
-            self.clock.tick(15) # dont need high fps
-
-    def rotate(self, img, degrees):
-        return pg.transform.rotate(img, degrees)
 
     def draw_snake(self):
         draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without raising index errors
@@ -361,7 +418,16 @@ class Snake():
         # TODO: Fix bug where now it also doesn't print head on self collision
         if not self.game_over:
             self.program_surface.blit(self.head, (self.snake_list[-1][0] % DISPLAY_WIDTH, self.snake_list[-1][1] % DISPLAY_HEIGHT))
+    
+    def draw_in_game_screen(self):
+        self.program_surface.fill(self.background_color)
+        self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
+        self.draw_score()
+        self.draw_snake()
 
+    def rotate(self, img, degrees):
+        return pg.transform.rotate(img, degrees)
+    
     def text_objects(self, text, color, size):
         if size == "small":
             text_surface = self.smallfont.render(text, True, color) # render message, True (for anti-aliasing), color
@@ -392,32 +458,61 @@ class Snake():
          indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
          self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y]) # TODO: remove hardcoded offset of 50?
 
-    def game_over_function(self):
-        # Only paste text once
-        self.center_msg_to_screen("Game over", self.text_color_emphasis_bad, y_displace=-50, size="large")
-        self.center_msg_to_screen("Press C to play again, Q to quit", self.text_color_normal, 50, size="med")
-        self.center_msg_to_screen("or BACKSPACE to return to main menu", self.text_color_normal, 100, size="med")
-        pg.display.update()
-        
-        while self.game_over:
-            for event in pg.event.get():
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_q:
-                        self.shutdown()
-                    elif event.key == pg.K_c:
-                        # Reset variables, then reset in_game to True to return to game_loop()
-                        self.reset_game_variables()
-                        self.in_game = True
-                    elif event.key == pg.K_BACKSPACE:
-                        # Reset variables, inclucing in_game to False to exit out of game_loop()
-                        # and return to main_menu()
-                        self.reset_game_variables()
-                elif event.type == pg.QUIT:
-                    self.shutdown()
 
     def game_loop(self):
         self.in_game = True
         while self.in_game:
+            # Moved event handling down so screen isn't redrawn when returning to main menu from pause menu
+
+            self.lead_x += self.lead_x_change
+            self.lead_y += self.lead_y_change
+
+            # Add boundaries to the game. If x or y is outside the game window, game over
+            if self.boundaries and (self.lead_x >= DISPLAY_WIDTH or self.lead_x < 0 or self.lead_y >= DISPLAY_HEIGHT or self.lead_y < 0):
+                self.game_over = True
+                # elif not self.boundaries:
+                #     if self.lead_x >= DISPLAY_WIDTH:
+                #         self.lead_x = 0
+                #     elif self.lead_x < 0:
+                #         self.lead_x = DISPLAY_WIDTH - BLOCK_SIZE
+                #     elif self.lead_y >= DISPLAY_HEIGHT:
+                #         self.lead_y = 0
+                #     elif self.lead_y < 0:
+                #         self.lead_y = DISPLAY_HEIGHT-BLOCK_SIZE
+            
+            self.snake_list.append([self.lead_x, self.lead_y])
+            
+            # TODO: check if this is needed fixing other issue where tail is only drawn on second clocktick.
+            # Suspect that the if-statement can then be removed, leaving just del statement
+            if len(self.snake_list) >  self.snake_length:
+                del self.snake_list[0] # remove the first (oldest) element of the list
+            
+            # If the head overlaps with any other segment of the snake, game over
+            for segment in self.snake_list[:-1]:
+                if segment == [self.lead_x, self.lead_y]:
+                    self.game_over = True
+            
+            self.draw_in_game_screen()
+
+            # Collision checking for grid-based and same-size apple/snake
+            # Modulo divisor (%) for when boundaries are disabled
+            if [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT] == [self.rand_apple_x, self.rand_apple_y]:
+                self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+                self.snake_length += 1
+
+            # Non grid-based collision checking for any size snake/apple
+            # if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
+            #     and self.lead_x < self.rand_apple_x + BLOCK_SIZE and self.lead_y < self.rand_apple_y + BLOCK_SIZE):
+            #     self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+            #     self.snake_length += 1
+            #     self.score += 1
+
+            pg.display.update() # update the display
+            self.clock.tick(GAME_FPS) # tick(x) for a game of x frames per second, put this after display.update()
+
+            if self.game_over:
+                self.game_over_menu()
+            
             for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_LEFT:
@@ -445,64 +540,9 @@ class Snake():
                         self.lead_x_change = 0
                         self.head = self.rotate(self.head_img, 180)
                     elif event.key == pg.K_p:
-                        self.pause()
+                        self.pause_menu()
                 elif event.type == pg.QUIT:
                     self.shutdown()
-
-            self.lead_x += self.lead_x_change
-            self.lead_y += self.lead_y_change
-
-            # Add boundaries to the game. If x or y is outside the game window, game over
-            if self.boundaries and (self.lead_x >= DISPLAY_WIDTH or self.lead_x < 0 or self.lead_y >= DISPLAY_HEIGHT or self.lead_y < 0):
-                self.game_over = True
-                # elif not self.boundaries:
-                #     if self.lead_x >= DISPLAY_WIDTH:
-                #         self.lead_x = 0
-                #     elif self.lead_x < 0:
-                #         self.lead_x = DISPLAY_WIDTH - BLOCK_SIZE
-                #     elif self.lead_y >= DISPLAY_HEIGHT:
-                #         self.lead_y = 0
-                #     elif self.lead_y < 0:
-                #         self.lead_y = DISPLAY_HEIGHT-BLOCK_SIZE
-
-            self.program_surface.fill(self.background_color)
-            self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
-            
-            self.snake_list.append([self.lead_x, self.lead_y])
-            
-            # TODO: check if this is needed fixing other issue where tail is only drawn on second clocktick.
-            # Suspect that the if-statement can then be removed, leaving just del statement
-            if len(self.snake_list) >  self.snake_length:
-                del self.snake_list[0] # remove the first (oldest) element of the list
-            
-            # If the head overlaps with any other segment of the snake, game over
-            for segment in self.snake_list[:-1]:
-                if segment == [self.lead_x, self.lead_y]:
-                    self.game_over = True
-
-            self.draw_snake()
-            self.print_score(self.score)
-
-            # Collision checking for grid-based and same-size apple/snake
-            # Modulo divisor (%) for when boundaries are disabled
-            if [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT] == [self.rand_apple_x, self.rand_apple_y]:
-                self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
-                self.snake_length += 1
-                self.score += 1
-
-            # Non grid-based collision checking for any size snake/apple
-            # if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
-            #     and self.lead_x < self.rand_apple_x + BLOCK_SIZE and self.lead_y < self.rand_apple_y + BLOCK_SIZE):
-            #     self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
-            #     self.snake_length += 1
-            #     self.score += 1
-
-            pg.display.update() # update the display
-            self.clock.tick(FPS) # tick(x) for a game of x frames per second, put this after display.update()
-
-            if self.game_over:
-                self.game_over_function()
-
 
 if __name__ == "__main__":
     snek = Snake()
