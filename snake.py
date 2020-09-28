@@ -36,7 +36,6 @@ BLOCK_SIZE = 20
 # TODO: Add different map sizes? small, medium, large
 # TODO: Resizeable game window? Need to think about desired behaviour of program_surface
 # TODO: bugfix not printing head on self collision
-# TODO: bugfix passing through self when boundaries are removed
 
 class Snake():
     def __init__(self):
@@ -75,7 +74,7 @@ class Snake():
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
 
-        # Initialize options, changeable in options menu
+        # Initialize settings, changeable in settings menu
         self.background_color = WHITE
         self.text_color_normal = BLACK
         self.text_color_emphasis_bad = RED
@@ -105,7 +104,7 @@ class Snake():
         self.current_score = self.snake_length - 2 # score == current length - base length
         self.head = self.rotate(self.head_img, 180) # starting direction is down
         #self.tail = self.tail_img
-        self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # TODO: refactor? also comment functionality
+        self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # Generate initial apple location
     
     def shutdown(self):
         # Store highscores on shutdown
@@ -120,7 +119,7 @@ class Snake():
         self.center_msg_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
         self.center_msg_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
         self.center_msg_to_screen("High-scores", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
-        self.center_msg_to_screen("Options", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
+        self.center_msg_to_screen("Settings", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
         self.center_msg_to_screen("Quit", self.text_color_normal, 160, "med", show_indicator=ind_pos==4)
         pg.display.update()
 
@@ -146,7 +145,7 @@ class Snake():
                             self.highscore_menu()
                             self.draw_main_menu(indicator_pos)
                         elif indicator_pos == 3:
-                            self.options_menu()
+                            self.settings_menu()
                             self.draw_main_menu(indicator_pos)
                         elif indicator_pos == 4:
                             self.shutdown()
@@ -168,7 +167,7 @@ class Snake():
             self.clock.tick(MENU_FPS)
             
 
-    def draw_options_menu(self, ind_pos):
+    def draw_settings_menu(self, ind_pos):
         # Set the correct colors for whether or not dark mode/edges are enabled/disabled
         bound_enabled_txt_color = self.text_color_emphasis_good
         bound_disabled_txt_color = self.text_color_emphasis_bad
@@ -182,7 +181,7 @@ class Snake():
             dark_disabled_txt_color = self.text_color_emphasis_bad
 
         self.program_surface.fill(self.background_color)
-        self.center_msg_to_screen("Options", self.text_color_normal, -100, "large")
+        self.center_msg_to_screen("Settings", self.text_color_normal, -100, "large")
         self.center_msg_to_screen("Dark mode:", self.text_color_normal)
         self.msg_to_screen("Enabled", dark_enabled_txt_color, DISPLAY_WIDTH//2 - 200, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[0,0])
         self.msg_to_screen("Disabled", dark_disabled_txt_color, DISPLAY_WIDTH//2 + 100, DISPLAY_HEIGHT // 2 + 20, show_indicator=ind_pos==[1,0])
@@ -193,11 +192,11 @@ class Snake():
         self.center_msg_to_screen("Return to main menu", self.text_color_normal, 250, show_indicator=ind_pos[1]==2)
         pg.display.update()
 
-    def options_menu(self):
+    def settings_menu(self):
         indicator_pos = [0,0]
         number_of_vert_entries = 2 # number of vert entries in menu - 1
         number_of_hor_entries = 1 # number of hor entries in menu - 1
-        self.draw_options_menu(indicator_pos)
+        self.draw_settings_menu(indicator_pos)
 
         in_submenu = True
         while in_submenu:
@@ -207,16 +206,16 @@ class Snake():
                         # When the user hits enter, execute code depending on indicator position
                         if indicator_pos == [0,0]:
                             self.toggle_dark_mode(True)
-                            self.draw_options_menu(indicator_pos)
+                            self.draw_settings_menu(indicator_pos)
                         elif indicator_pos == [1,0]:
                             self.toggle_dark_mode(False)
-                            self.draw_options_menu(indicator_pos)
+                            self.draw_settings_menu(indicator_pos)
                         elif indicator_pos == [0,1]:
                             self.boundaries = True
-                            self.draw_options_menu(indicator_pos)
+                            self.draw_settings_menu(indicator_pos)
                         elif indicator_pos == [1,1]:
                             self.boundaries = False
-                            self.draw_options_menu(indicator_pos)
+                            self.draw_settings_menu(indicator_pos)
                         elif indicator_pos[1] == 2:
                             in_submenu = False
                     # Move indicator position with arrow keys, wrap when exceeding entry number 
@@ -224,22 +223,22 @@ class Snake():
                         indicator_pos[0] += 1
                         if indicator_pos[0] > number_of_hor_entries:
                             indicator_pos[0] = 0
-                        self.draw_options_menu(indicator_pos)
+                        self.draw_settings_menu(indicator_pos)
                     elif event.key == pg.K_LEFT:
                         indicator_pos[0] -= 1
                         if indicator_pos[0] < 0:
                             indicator_pos[0] = number_of_hor_entries
-                        self.draw_options_menu(indicator_pos)
+                        self.draw_settings_menu(indicator_pos)
                     elif event.key == pg.K_DOWN:
                         indicator_pos[1] += 1
                         if indicator_pos[1] > number_of_vert_entries:
                             indicator_pos[1] = 0
-                        self.draw_options_menu(indicator_pos)
+                        self.draw_settings_menu(indicator_pos)
                     elif event.key == pg.K_UP:
                         indicator_pos[1] -= 1
                         if indicator_pos[1] < 0:
                             indicator_pos[1] = number_of_vert_entries
-                        self.draw_options_menu(indicator_pos)
+                        self.draw_settings_menu(indicator_pos)
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
@@ -572,8 +571,8 @@ class Snake():
                 del self.snake_list[0] # remove the first (oldest) element of the list
             
             # If the head overlaps with any other segment of the snake, game over
-            for segment in self.snake_list[:-1]:
-                if segment == [self.lead_x, self.lead_y]:
+            for [x,y] in self.snake_list[:-1]:
+                if [x % DISPLAY_WIDTH, y % DISPLAY_HEIGHT] == [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT]:
                     self.game_over = True
             
             self.draw_in_game_screen()
