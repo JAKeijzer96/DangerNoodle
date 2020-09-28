@@ -1,0 +1,5 @@
+# Don't include local highscores
+highscores.dat
+# Don't include possible build/ and dist/ folder after building with (modified) setup.py
+build/
+dist/

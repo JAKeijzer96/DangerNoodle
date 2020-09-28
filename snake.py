@@ -5,6 +5,7 @@ except ModuleNotFoundError as e:
 from sys import exit
 from random import randint
 import ctypes
+import pickle
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
 
@@ -31,8 +32,6 @@ GAME_FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per cl
 MENU_FPS = 15
 BLOCK_SIZE = 20
 
-# TODO: Make proper start menu, with options and local highscore submenus, arrow key movement, possible mouse support
-# TODO: Add local highscore file with related function
 # TODO: Add different maps with obstacles?
 # TODO: Add different map sizes? small, medium, large
 # TODO: Resizeable game window? Need to think about desired behaviour of program_surface
@@ -51,15 +50,9 @@ class Snake():
             print(f"Error: One or more sprites could not be located\n{e}")
             print("Shutting down")
             self.shutdown()
-        # Initialize main program surface
-        self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
-        pg.display.set_caption("DangerNoodle - A very original game by Jasper")
-        pg.display.set_icon(self.icon)
-        # Initialize clock object to tick every FPS times per second
-        self.clock = pg.time.Clock() # pg clock object used to set fps
         # Initialize fonts
         try:
-            self.smallfont = pg.font.Font(FONT, 30) # TODO: find prettier font and matching sizes
+            self.smallfont = pg.font.Font(FONT, 30)
             self.medfont = pg.font.Font(FONT, 40) # size 50
             self.largefont = pg.font.Font(FONT, 80) # size 80
         except FileNotFoundError as e:
@@ -67,6 +60,21 @@ class Snake():
             self.smallfont = pg.font.SysFont(None, 30, bold=1)
             self.medfont = pg.font.SysFont(None, 40, bold=1)
             self.largefont = pg.font.SysFont(None, 80, bold=1)
+        # Initialize highscores
+        try:
+            with open("highscores.dat", "rb") as file:
+                self.highscores = pickle.load(file)
+        except:
+            self.highscores = []
+            for _ in range(5):
+                self.highscores.append( ('', 0) ) #Initialize highscores to empty if no file is found
+        # Initialize main program surface
+        self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
+        pg.display.set_caption("DangerNoodle - A very original game by Jasper")
+        pg.display.set_icon(self.icon)
+        # Initialize clock object to tick every FPS times per second
+        self.clock = pg.time.Clock() # pg clock object used to set fps
+
         # Initialize options, changeable in options menu
         self.background_color = WHITE
         self.text_color_normal = BLACK
@@ -94,28 +102,31 @@ class Snake():
         self.lead_y_change = BLOCK_SIZE # change in lead_y location every clock tick, initially snake moves down
         self.snake_list = [] # list of all squares currently occupied by the snake
         self.snake_length = 2 # max allowed length of the snake
+        self.current_score = self.snake_length - 2 # score == current length - base length
         self.head = self.rotate(self.head_img, 180) # starting direction is down
         #self.tail = self.tail_img
         self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # TODO: refactor? also comment functionality
     
     def shutdown(self):
+        # Store highscores on shutdown
+        with open("highscores.dat", "wb") as file:
+            pickle.dump(self.highscores, file)
         pg.quit()
         exit()
 
     def draw_main_menu(self, ind_pos):
-        # TODO: integrate indicator_pos to add ">" before current selected pos
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("Welcome to Slither", self.snake_color, -100, "large")
         self.center_msg_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
         self.center_msg_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
-        self.center_msg_to_screen("Options", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
-        self.center_msg_to_screen("Quit", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
+        self.center_msg_to_screen("High-scores", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
+        self.center_msg_to_screen("Options", self.text_color_normal, 120, "med", show_indicator=ind_pos==3)
+        self.center_msg_to_screen("Quit", self.text_color_normal, 160, "med", show_indicator=ind_pos==4)
         pg.display.update()
 
     def main_menu(self):
-        # TODO: add mouse support?
         indicator_pos = 0
-        number_of_entries = 3 # number of entries in menu - 1
+        number_of_entries = 4 # number of entries in menu - 1
         self.draw_main_menu(indicator_pos)
 
         while not self.program_exit:
@@ -132,9 +143,12 @@ class Snake():
                             self.help_menu()
                             self.draw_main_menu(indicator_pos)
                         elif indicator_pos == 2:
-                            self.options_menu()
+                            self.highscore_menu()
                             self.draw_main_menu(indicator_pos)
                         elif indicator_pos == 3:
+                            self.options_menu()
+                            self.draw_main_menu(indicator_pos)
+                        elif indicator_pos == 4:
                             self.shutdown()
                     # Move indicator position up/down with arrow keys, wrap when exceeding entry number
                     elif event.key == pg.K_DOWN:
@@ -246,7 +260,6 @@ class Snake():
 
     def help_menu(self):
         self.draw_help_menu()
-
         in_submenu = True
         while in_submenu:
             for event in pg.event.get():
@@ -255,8 +268,78 @@ class Snake():
                         in_submenu = False
                 elif event.type == pg.QUIT:
                     self.shutdown()
+            self.clock.tick(MENU_FPS)
+    
+    def draw_highscore_menu(self):
+        self.program_surface.fill(self.background_color)
+        self.center_msg_to_screen("High-scores", self.text_color_normal, -100, "large")
+        offset = 30
+        for idx, (name, score) in enumerate(self.highscores):
+            if name:
+                self.center_msg_to_screen(f"{name}: {score}", self.text_color_normal, (idx+1) * offset, "med")
+        self.center_msg_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
+        pg.display.update()
+
+    def highscore_menu(self):
+        self.draw_highscore_menu()
+        in_submenu = True
+        while in_submenu:
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        in_submenu = False
+                elif event.type == pg.QUIT:
+                    self.shutdown()
+            self.clock.tick(MENU_FPS)
+
+    def update_highscores(self):
+        # Max amount of highscores is currently 5
+        if len(self.highscores) >= 5:
+            for idx, (_, old_score) in enumerate(self.highscores):
+                if self.current_score > old_score:
+                    new_name = self.highscore_name_input()
+                    if new_name: # don't save score when name is empty
+                        self.highscores.insert(idx, (new_name, self.current_score) )
+                        self.highscores.pop()
+                    return # End loop after inserting the new highscore
+        else:
+            self.highscores.append( ("", self.current_score) )
+            self.highscores.sort(reverse=True) # Is this possible for the desired data structure?
+    
+    def draw_highscore_name_input(self, string):
+        self.draw_in_game_screen()
+        # Make textbox, user input, keep updating when user enters text
+        # Possibly need draw function with inputted string as parameter
+        self.center_msg_to_screen("New high-score!", self.text_color_emphasis_good, -100, "large")
+        self.center_msg_to_screen("Please enter your name:", self.text_color_normal, -30, "med")
+        self.center_msg_to_screen(string, self.text_color_normal, 0, "med")
+        pg.display.update()
+
+    def highscore_name_input(self):
+        # Called after game over menu if new highscore
+        user_string = ''
+        self.draw_highscore_name_input(user_string)
+        inputting = True
+        bkspace = False
+        while inputting:
+            if bkspace:
+                user_string = user_string[:-1]
+                self.draw_highscore_name_input(user_string)
+            for event in pg.event.get():
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_RETURN:
+                        inputting = False
+                    elif event.key == pg.K_BACKSPACE:
+                        bkspace = True
+                    elif event.unicode:
+                        user_string += event.unicode
+                        self.draw_highscore_name_input(user_string)
+                elif event.type == pg.KEYUP:
+                    if event.key == pg.K_BACKSPACE:
+                        bkspace = False
             
             self.clock.tick(MENU_FPS)
+        return user_string
     
     def draw_pause_menu(self, ind_pos):
         # Re-draw the background images to create a transparent pause menu
@@ -273,6 +356,7 @@ class Snake():
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
         self.draw_pause_menu(indicator_pos)
+        self.update_highscores()
 
         while paused:
             for event in pg.event.get():
@@ -281,6 +365,7 @@ class Snake():
                         if indicator_pos == 0:
                             paused = False
                         elif indicator_pos == 1:
+                            # Return to main menu
                             self.reset_game_variables()
                             paused = False
                         elif indicator_pos == 2:
@@ -312,7 +397,9 @@ class Snake():
     def game_over_menu(self):
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
+        self.update_highscores()
         self.draw_game_over_menu(indicator_pos)
+
         while self.game_over:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN:
@@ -342,8 +429,7 @@ class Snake():
                     self.shutdown()
 
     def draw_score(self):
-        # Score is the current snake length - starting length, currently 2
-        text = self.smallfont.render(f"Score: {self.snake_length - 2}", True, self.text_color_normal)
+        text = self.smallfont.render(f"Score: {self.current_score}", True, self.text_color_normal)
         self.program_surface.blit(text, [0,0])
 
     def toggle_dark_mode(self, enable):
@@ -438,7 +524,6 @@ class Snake():
         return text_surface, text_surface.get_rect()
 
     def center_msg_to_screen(self, msg, color, y_displace=0, size="small", show_indicator=False, indicator_offset=-50):
-        # TODO: clean up text_objects and center_msg_to_screen functions? possibly combine
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
         if show_indicator:
@@ -456,8 +541,7 @@ class Snake():
     def indicator_to_screen(self, text_rect, size, offset):
          # text_rect = [x, y, width, height]
          indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
-         self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y]) # TODO: remove hardcoded offset of 50?
-
+         self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y])
 
     def game_loop(self):
         self.in_game = True
@@ -482,7 +566,7 @@ class Snake():
             
             self.snake_list.append([self.lead_x, self.lead_y])
             
-            # TODO: check if this is needed fixing other issue where tail is only drawn on second clocktick.
+            # TODO: check if this is needed after fixing other issue where tail is only drawn on second clocktick.
             # Suspect that the if-statement can then be removed, leaving just del statement
             if len(self.snake_list) >  self.snake_length:
                 del self.snake_list[0] # remove the first (oldest) element of the list
@@ -499,6 +583,7 @@ class Snake():
             if [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT] == [self.rand_apple_x, self.rand_apple_y]:
                 self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
                 self.snake_length += 1
+                self.current_score += 1
 
             # Non grid-based collision checking for any size snake/apple
             # if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
@@ -510,16 +595,19 @@ class Snake():
             pg.display.update() # update the display
             self.clock.tick(GAME_FPS) # tick(x) for a game of x frames per second, put this after display.update()
 
-            if self.game_over:
+            if self.game_over:  
                 self.game_over_menu()
             
             for event in pg.event.get(): # gets all events (mouse movenent, key press/release, quit etc)
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_LEFT:
-                        if self.lead_x_change == BLOCK_SIZE: # disallow running into self
-                            break # TODO: momre comments on functionality
+                        # If moving right, don't allow the user to move left, instead 
+                        # break out of loop and get next event
+                        if self.lead_x_change == BLOCK_SIZE:
+                            break
                         self.lead_x_change = -BLOCK_SIZE
                         self.lead_y_change = 0
+                        # Rotate head to face the right way
                         self.head = self.rotate(self.head_img, 90)
                     elif event.key == pg.K_RIGHT:
                         if self.lead_x_change == -BLOCK_SIZE: # disallow running into self
