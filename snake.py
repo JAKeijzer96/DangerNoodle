@@ -1,17 +1,33 @@
+"""
+TODO (init, draw_snake, game_loop, generate_apple functions):
+Find method to get high fps with possibly lower x,y increments per clock tick.
+Increments depend on but are not equal to block_size. if they were this could mess up the grid system
+Might need to check for first upcoming multiple of block_size, then turn?
+
+TODO (generate_apple() function):
+remove checklist and check immediately in self.snake_list using some kind of dont-care operator?
+like while [apple_x, apple_y, _] in self.snakelist
+https://stackoverflow.com/questions/53488787/is-there-a-dont-care-value-for-lists-in-python/53488822
+
+TODO (draw_snake() function):
+remove the hardcoded checking for right-then-up and up-then-right movement
+"""
+
 try:
     import pygame as pg
 except ModuleNotFoundError as e:
     print(f"{e}: The pygame module could not be found")
-from sys import exit
+from sys import exit, platform
 from random import randint
 import ctypes
 import pickle
 
 pg.init() # initialize pg modules. Returns a tuple of (succesful, unsuccesful) initializations
 
-# set unique windows app id so Windows uses the proper icon in the taskbar when executing snake.py
-myappid = "arbitrary string to uniquely identify snake game"
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+if 'win' in platform.lower():
+    # set unique windows app id so Windows uses the proper icon in the taskbar when executing snake.py
+    myappid = "arbitrary string to uniquely identify snake game"
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 # Initialize color constants as their corresponding RGB values
 WHITE = (255, 255, 255)
@@ -26,12 +42,14 @@ FONT = "./Gasalt-Black.ttf"
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
 
-
-# TODO: Add different maps with obstacles?
-# TODO: Add different map sizes? small, medium, large
-# TODO: Resizeable game window? Need to think about desired behaviour of program_surface
-
 class Snake():
+    """
+    The Snake class allows the user to create and play a clone of the original snake game.
+    Usage:
+    import snake
+    game = snake.Snake()
+    game.main_menu()
+    """
     def __init__(self):
         # Initialize fonts
         try:
@@ -51,9 +69,7 @@ class Snake():
         self.snake_color = SNAKE_GREEN
         # Initialize blocksize and fps
         self.block_size = 20
-        self.game_fps = 15# TODO: Find optimal fps with possibly lower x,y increments per clock tick.
-         # increments depend on but are not equal to block_size. if they were this could mess up the grid system
-         # check for first upcoming multiple of block_size, then turn?
+        self.game_fps = 15
         self.menu_fps = 15
         # Initialize highscores
         try:
@@ -92,9 +108,12 @@ class Snake():
         self.clock = pg.time.Clock() # pg clock object used to set fps
         # Call function to reset in-game variables, in this case initializing them
         self.reset_game_variables()
-        
-    # Function to initialize game variables at the start, or reset them on game_over
+
     def reset_game_variables(self):
+        """
+        Function to initialize game variables at the start of the game,
+        or reset them on game_over
+        """
         self.game_over = False # True if snake is dead but program still running
         self.program_exit = False # True if program is quit
         self.in_game = False # True if the user is actively playing snake
@@ -102,15 +121,23 @@ class Snake():
         self.lead_y = DISPLAY_HEIGHT//2 # y-ocation of head, initially center of screen
         self.lead_x_change = 0 # Change in lead_x location every clock tick
         self.lead_y_change = self.block_size # change in lead_y location every clock tick, initially snake moves down
-        self.snake_list = [] # list of all squares currently occupied by the snake
-        self.snake_length = 2 # max allowed length of the snake
-        self.current_score = self.snake_length - 2 # score == current length - base length
+        # body, turn and tail rotation is based on the rotation of the previous snake segment
         self.head_rotation = 180 # starting direction is down
         self.head = self.rotate(self.head_img, self.head_rotation) # starting direction is down
+        # snake_list is a list of all squares currently occupied by the snake and their rotation
+        # initialize snake as size 2 and moving downwards
+        self.snake_list = [[self.lead_x, self.lead_y-self.block_size, self.head_rotation],
+                            [self.lead_x, self.lead_y, self.head_rotation]]
+        self.snake_length = 2 # max allowed length of the snake
+        self.current_score = self.snake_length - 2 # score == current length - base lengt
         self.generate_apple() # Generate initial apple location
-    
+
     def shutdown(self):
-        # Store highscores on shutdown
+        """
+        Function to properly shut the program down
+        and save local highscores and settings
+        """
+        # Store highscores and settings on shutdown
         with open("highscores.pickle", "wb") as file:
             pickle.dump(self.highscores, file)
         with open("settings.pickle", "wb") as file:
@@ -119,6 +146,11 @@ class Snake():
         exit()
 
     def draw_main_menu(self, ind_pos):
+        """
+        Function called by main_menu() to draw the correct text on the screen
+        Parameters:
+            ind_pos (int): the position of the menu indicator
+        """
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("DangerNoodle", self.snake_color, -100, "large")
         self.center_msg_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
@@ -129,6 +161,10 @@ class Snake():
         pg.display.update()
 
     def main_menu(self):
+        """
+        Main menu and start of the game. All other class methods and functions are
+        directly or indirectly called from here. 
+        """
         indicator_pos = 0
         number_of_entries = 4 # number of entries in menu - 1
         self.draw_main_menu(indicator_pos)
@@ -172,18 +208,24 @@ class Snake():
             self.clock.tick(self.menu_fps)
 
     def draw_settings_menu(self, ind_pos):
+        """
+        Function called by settings_menu() to draw the correct text on the screen
+        Parameters:
+            ind_pos (int): the position of the menu indicator
+        """
         # Set the correct colors for whether or not dark mode/edges are enabled/disabled
-        bound_enabled_txt_color = self.text_color_emphasis_good
-        bound_disabled_txt_color = self.text_color_emphasis_bad
-        if not self.boundaries:
+        if self.boundaries:
+            bound_enabled_txt_color = self.text_color_emphasis_good
+            bound_disabled_txt_color = self.text_color_emphasis_bad
+        else:
             bound_enabled_txt_color = self.text_color_emphasis_bad
             bound_disabled_txt_color = self.text_color_emphasis_good
-        dark_enabled_txt_color = self.text_color_emphasis_bad
-        dark_disabled_txt_color = self.text_color_emphasis_good
         if self.dark_mode:
             dark_enabled_txt_color = self.text_color_emphasis_good
             dark_disabled_txt_color = self.text_color_emphasis_bad
-
+        else:
+            dark_enabled_txt_color = self.text_color_emphasis_bad
+            dark_disabled_txt_color = self.text_color_emphasis_good    
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("Settings", self.text_color_normal, -100, "large")
         self.center_msg_to_screen("Dark mode:", self.text_color_normal)
@@ -197,6 +239,11 @@ class Snake():
         pg.display.update()
 
     def settings_menu(self):
+        """
+        The settings menu is a submenu of the main menu. It allows the user
+        to change some settings, these changes are saved locally and persist
+        through different sessions
+        """
         indicator_pos = [0,0]
         number_of_vert_entries = 2 # number of vert entries in menu - 1
         number_of_hor_entries = 1 # number of hor entries in menu - 1
@@ -249,7 +296,9 @@ class Snake():
             self.clock.tick(self.menu_fps)
 
     def draw_help_menu(self):
-        # TODO: Move all (sub)menus up a bit? But stay consistent
+        """
+        Function called by help_menu() to draw the correct text on the screen
+        """
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("Help", self.text_color_normal, -200, "large")
         self.center_msg_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, -100 )
@@ -263,6 +312,10 @@ class Snake():
         pg.display.update()
 
     def help_menu(self):
+        """
+        The help menu is a submenu of the main menu. It presents an explanation
+        of how the game and the controls work.
+        """
         self.draw_help_menu()
         in_submenu = True
         while in_submenu:
@@ -275,16 +328,24 @@ class Snake():
             self.clock.tick(self.menu_fps)
 
     def draw_highscore_menu(self):
+        """
+        Function called by highscore_menu() to draw the correct text on the screen
+        """
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("High-scores", self.text_color_normal, -100, "large")
         offset = 30
         for idx, (name, score) in enumerate(self.highscores):
+            # Only draw the score if there is a valid name
             if name:
                 self.center_msg_to_screen(f"{name}: {score}", self.text_color_normal, (idx+1) * offset, "med")
         self.center_msg_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
         pg.display.update()
 
     def highscore_menu(self):
+        """
+        The highscore menu is a submenu of the main menu. Local highscores are displayed
+        here. These highscores are saved locally and persist through sessions.
+        """
         self.draw_highscore_menu()
         in_submenu = True
         while in_submenu:
@@ -297,6 +358,11 @@ class Snake():
             self.clock.tick(self.menu_fps)
 
     def update_highscores(self):
+        """
+        Function called on game_over to check if the current score is a
+        new highscore. If so, call highscore_name_input() to allow the user
+        to save their name
+        """
         # Max amount of highscores is currently 5
         if len(self.highscores) >= 5:
             for idx, (_, old_score) in enumerate(self.highscores):
@@ -311,6 +377,11 @@ class Snake():
             self.highscores.sort(reverse=True) # Is this possible for the desired data structure?
 
     def draw_highscore_name_input(self, string):
+        """
+        Function called by highscore_name_input() to draw the correct text on the screen
+        Parameters:
+            string (str): the string the user is inputting
+        """
         self.draw_in_game_screen()
         # Make textbox, user input, keep updating when user enters text
         # Possibly need draw function with inputted string as parameter
@@ -320,7 +391,10 @@ class Snake():
         pg.display.update()
 
     def highscore_name_input(self):
-        # Called after game over menu if new highscore
+        """
+        This function is called after game_over if a new highscore is set.
+        It allows the user to enter their name using pygame-registered unicode characters
+        """
         user_string = ''
         self.draw_highscore_name_input(user_string)
         inputting = True
@@ -348,9 +422,15 @@ class Snake():
         return user_string
 
     def draw_pause_menu(self, ind_pos):
+        """
+        Function called by pause_menu() to draw the correct text on the screen
+        Unlike most menus this menu behaves like an in-game overlay, allowing
+        the user to see the current state of the game behind the menu text
+        Parameters:
+            ind_pos (int): the position of the menu indicator
+        """
         # Re-draw the background images to create a transparent pause menu
         self.draw_in_game_screen()
-        # Update once when paused, then only check for event handling
         self.center_msg_to_screen("Game paused", self.text_color_normal, -50, size="large")
         self.center_msg_to_screen("Continue", self.text_color_normal, 50, size="med", show_indicator=ind_pos==0)
         self.center_msg_to_screen("Main menu", self.text_color_normal, 100, size="med", show_indicator=ind_pos==1)
@@ -358,6 +438,10 @@ class Snake():
         pg.display.update()
 
     def pause_menu(self):
+        """
+        Pause function, called by pressing either P or ESC while in game.
+        Players can either continue, go to the main menu or exit the application
+        """
         paused = True
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
@@ -393,9 +477,15 @@ class Snake():
             self.clock.tick(self.menu_fps) # dont need high fps
 
     def draw_game_over_menu(self, ind_pos):
+        """
+        Function called by game_over_menu() to draw the correct text on the screen
+        Unlike most menus this menu behaves like a post-game overlay, allowing
+        the user to see the final state of the game behind the menu text
+        Parameters:
+            ind_pos (int): the position of the menu indicator
+        """
         # Re-draw the background images to create a transparent game over menu
         self.draw_in_game_screen()
-        # Only paste text once
         self.center_msg_to_screen("Game over", self.text_color_emphasis_bad, y_displace=-50, size="large")
         self.center_msg_to_screen("Play again", self.text_color_normal, 50, size="med", show_indicator=ind_pos==0)
         self.center_msg_to_screen("Main menu", self.text_color_normal, 100, size="med", show_indicator=ind_pos==1)
@@ -403,6 +493,11 @@ class Snake():
         pg.display.update()
 
     def game_over_menu(self):
+        """
+        Game over menu, called when the snake collides with a wall or itself
+        It checks if the new score is a highscore before asking the user
+        if (s)he wants to play again, return to main menu or quit the application
+        """
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
         self.update_highscores()
@@ -437,10 +532,18 @@ class Snake():
                     self.shutdown()
 
     def draw_score(self):
+        """
+        Function to draw the current score in the top left corner of the in-game screen
+        """
         text = self.smallfont.render(f"Score: {self.current_score}", True, self.text_color_normal)
         self.program_surface.blit(text, [0,0])
 
     def toggle_dark_mode(self, enable):
+        """
+        Allows the user to toggle dark mode if desired
+        Parameters:
+            enable (bool): If True, enable dark mode. If False, disable dark mode
+        """
         if enable:
             self.dark_mode = True
             self.background_color = BLACK
@@ -451,22 +554,24 @@ class Snake():
             self.text_color_normal = BLACK
 
     def generate_apple(self):
+        """
+        Function to generate a random location for the apple, while not allowing
+        it to spawn directly under the snake
+        """
         # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
         # [display_width, display_height, block_size, block_size], which would appear offscreen
         self.apple_x = round(randint(0, DISPLAY_WIDTH - self.block_size)  / self.block_size) * self.block_size # round to nearest block_size
         self.apple_y = round(randint(0, DISPLAY_HEIGHT - self.block_size) / self.block_size) * self.block_size # round to nearest block_size
         # Disallow apple to spawn under snake
-        # TODO: remove checklist and check immediately in self.snake_list using some kind of dont-care operator?
-        # like while [apple_x, apple_y, _] in self.snakelist
-		# https://stackoverflow.com/questions/53488787/is-there-a-dont-care-value-for-lists-in-python/53488822
         checklist = [segment[:2] for segment in self.snake_list]
         while [self.apple_x, self.apple_y] in checklist:
             self.apple_x = round(randint(0, DISPLAY_WIDTH - self.block_size)  / self.block_size) * self.block_size # round to nearest block_size
             self.apple_y = round(randint(0, DISPLAY_HEIGHT - self.block_size) / self.block_size) * self.block_size # round to nearest block_size
 
     def draw_snake(self):
-        # TODO: code snake to appear fully on game start instead of being generated from the spawning point
-
+        """
+        Function to draw the head, body, turns and tail of the snake on the screen.
+        """
         draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without raising index errors
         for idx, segment in enumerate(self.snake_list[draw_tail:-1]): # the last element is the head, so dont put a square there
             if idx == 0:
@@ -483,7 +588,6 @@ class Snake():
                     elif self.snake_list[idx+1][2] == 270 and segment[2] == 0:
                         body = self.rotate(self.turn_img, 180)
                     # This is actual calculation
-                    # TODO: remove the hardcoded checking for right-then-up and up-then-right movement
                     elif self.snake_list[idx+1][2] > segment[2]:
                         body = self.rotate(self.turn_img, self.snake_list[idx+1][2])
                     elif self.snake_list[idx+1][2] < segment[2]:
@@ -496,15 +600,32 @@ class Snake():
         self.program_surface.blit(self.head, (self.snake_list[-1][0], self.snake_list[-1][1]))
 
     def draw_in_game_screen(self):
+        """
+        Function to draw the in-game screen. This includes the background,
+        apple, score and the snake itself.
+        """
         self.program_surface.fill(self.background_color)
         self.program_surface.blit(self.apple_img, (self.apple_x, self.apple_y))
         self.draw_score()
         self.draw_snake()
 
     def rotate(self, img, degrees):
+        """
+        Rotate a given image a given amount of degrees anti-clockwise
+        Parameters:
+            img (image): The image to rotate
+            degrees (int): The amount of degrees to rotate the image
+        """
         return pg.transform.rotate(img, degrees)
 
     def text_objects(self, text, color, size):
+        """
+        Function to a text object and return the text object and its bounding rectangle
+        Parameters:
+            text (str): The text to transform into a text object
+            color (tup): A tuple of the int values of the desired RGB colors
+            size (str): Determines the size of the font, either 'small', 'med' or 'large'
+        """
         if size == "small":
             text_surface = self.smallfont.render(text, True, color) # render message, True (for anti-aliasing), color
         elif size == "med":
@@ -514,6 +635,16 @@ class Snake():
         return text_surface, text_surface.get_rect()
 
     def center_msg_to_screen(self, msg, color, y_displace=0, size="small", show_indicator=False, indicator_offset=-50):
+        """
+        Function to blit a message to the center of the screen
+        Parameters:
+            msg (str): The message to be shown
+            color (tup): A tuple of integers representing the desired RGB values
+            y_displace (int): Vertical displacement relative to the center. Defaults to 0
+            size (str): The size of the font, either 'small', 'med' or 'large'. Defaults to 'small'
+            show_indicator (bool): Show indicator next to message or not. Defaults to False
+            indicator_offset (int): Determine horiontal offset of the indicator to the message
+        """
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.center = (DISPLAY_WIDTH//2, DISPLAY_HEIGHT//2 + y_displace)
         if show_indicator:
@@ -521,6 +652,17 @@ class Snake():
         self.program_surface.blit(text_surface, text_rect) # show screen_text on [coords]
 
     def msg_to_screen(self, msg, color, x_coord, y_coord, size="small", show_indicator=False, indicator_offset=-50):
+        """
+        Function to blit a message to the any position on the screen
+        Parameters:
+            msg (str): The message to be shown
+            color (tup): A tuple of integers representing the desired RGB values
+            x_coord (int): The x coordinate of the top left corner of the messages bounding rectangle
+            y_coord (int): The y coordinate of the top left corner of the messages bounding rectangle
+            size (str): The size of the font, either 'small', 'med' or 'large'. Defaults to 'small'
+            show_indicator (bool): Show indicator next to message or not. Defaults to False
+            indicator_offset (int): Determine horiontal offset of the indicator to the message
+        """
         text_surface, text_rect = self.text_objects(msg, color, size)
         text_rect.x = x_coord
         text_rect.y = y_coord
@@ -528,12 +670,24 @@ class Snake():
             self.indicator_to_screen(text_rect, size, indicator_offset)
         self.program_surface.blit(text_surface, text_rect)
 
+
     def indicator_to_screen(self, text_rect, size, offset):
-         # text_rect is an object with [x, y, width, height] values
-         indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
-         self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y])
+        """
+        Function to print an indicator next to a message to show the current selection.
+        Parameters:
+            text_rect (obj): A pygame rect object, the bounding rectangle of the message
+            size (str): The font size of the message next to which the indicator should appear
+            offset (int): The negative horizontal offset to the left of the message
+        """
+        # text_rect is an object with [x, y, width, height] values
+        indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
+        self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y])
 
     def game_loop(self):
+        """
+        The game loop of the snake game. All in-game events such as direction are handled here,
+        as well as calling for a new apple location etc.
+        """
         self.in_game = True
         while self.in_game:
             # Moved event handling down so screen isn't redrawn when returning to main menu from pause menu
@@ -558,8 +712,6 @@ class Snake():
             snake_head = [self.lead_x, self.lead_y, self.head_rotation]
             self.snake_list.append(snake_head)
             
-            # TODO: check if this is needed after fixing other issue where tail is only drawn on second clocktick.
-            # Suspect that the if-statement can then be removed, leaving just del statement
             if len(self.snake_list) >  self.snake_length:
                 del self.snake_list[0] # remove the first (oldest) element of the list
             
