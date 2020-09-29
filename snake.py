@@ -61,14 +61,29 @@ class Snake():
             self.smallfont = pg.font.SysFont(None, 30, bold=1)
             self.medfont = pg.font.SysFont(None, 40, bold=1)
             self.largefont = pg.font.SysFont(None, 80, bold=1)
+        # Initialize colors, changeable in settings menu
+        self.background_color = WHITE
+        self.text_color_normal = BLACK
+        self.text_color_emphasis_bad = RED
+        self.text_color_emphasis_good = GREEN
+        self.snake_color = SNAKE_GREEN
         # Initialize highscores
         try:
-            with open("highscores.dat", "rb") as file:
+            with open("highscores.pickle", "rb") as file:
                 self.highscores = pickle.load(file)
         except:
             self.highscores = []
             for _ in range(5):
                 self.highscores.append( ('', 0) ) #Initialize highscores to empty if no file is found
+        # Initialize settings
+        try:
+            with open("settings.pickle", "rb") as file:
+                self.boundaries, self.dark_mode = pickle.load(file)
+            if self.dark_mode:
+                self.toggle_dark_mode(True)
+        except:
+            self.boundaries = True
+            self.dark_mode = False
         # Initialize main program surface
         self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
         pg.display.set_caption("DangerNoodle - A very original game by Jasper")
@@ -76,21 +91,9 @@ class Snake():
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
 
-        # Initialize settings, changeable in settings menu
-        self.background_color = WHITE
-        self.text_color_normal = BLACK
-        self.text_color_emphasis_bad = RED
-        self.text_color_emphasis_good = GREEN
-        self.snake_color = SNAKE_GREEN
-        self.boundaries = True
-        self.dark_mode = False
-        # Call function to reset game variables, in this case initializing them
+
+        # Call function to reset in-game variables, in this case initializing them
         self.reset_game_variables()
-
-        """remove this later"""
-        # TODO: save dark mode (and other settings) in settings file
-        self.toggle_dark_mode(True)
-
         
     # Function to initialize game variables at the start, or reset them on game_over
     def reset_game_variables(self):
@@ -110,8 +113,10 @@ class Snake():
     
     def shutdown(self):
         # Store highscores on shutdown
-        with open("highscores.dat", "wb") as file:
+        with open("highscores.pickle", "wb") as file:
             pickle.dump(self.highscores, file)
+        with open("settings.pickle", "wb") as file:
+            pickle.dump( (self.boundaries, self.dark_mode), file)
         pg.quit()
         exit()
 
@@ -523,7 +528,7 @@ class Snake():
         self.program_surface.blit(text_surface, text_rect)
 
     def indicator_to_screen(self, text_rect, size, offset):
-         # text_rect = [x, y, width, height]
+         # text_rect is an object with [x, y, width, height] values
          indicator = self.text_objects(">", self.text_color_normal, size)[0] # first entry of (surface, rect) tuple
          self.program_surface.blit(indicator, [text_rect.x + offset, text_rect.y])
 
