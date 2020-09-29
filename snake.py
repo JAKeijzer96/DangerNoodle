@@ -45,6 +45,8 @@ class Snake():
             self.head_img = pg.image.load("snakehead.png") # block_size x block_size pixels
             self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
             self.tail_img = pg.image.load("snaketail.png") # block_size x block_size pixels
+            self.body_img = pg.image.load("body.png")
+            self.body_turn_img = pg.image.load("bodyturn.png")
         except pg.error as e:
             print(f"Error: One or more sprites could not be located\n{e}")
             print("Shutting down")
@@ -102,9 +104,9 @@ class Snake():
         self.snake_list = [] # list of all squares currently occupied by the snake
         self.snake_length = 2 # max allowed length of the snake
         self.current_score = self.snake_length - 2 # score == current length - base length
-        self.head = self.rotate(self.head_img, 180) # starting direction is down
-        #self.tail = self.tail_img
-        self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen() # Generate initial apple location
+        self.head_rotation = 180 # starting direction is down
+        self.head = self.rotate(self.head_img, self.head_rotation) # starting direction is down
+        self.generate_apple() # Generate initial apple location
     
     def shutdown(self):
         # Store highscores on shutdown
@@ -336,6 +338,8 @@ class Snake():
                 elif event.type == pg.KEYUP:
                     if event.key == pg.K_BACKSPACE:
                         bkspace = False
+                elif event.type == pg.QUIT:
+                    self.shutdown()
             
             self.clock.tick(MENU_FPS)
         return user_string
@@ -355,7 +359,6 @@ class Snake():
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
         self.draw_pause_menu(indicator_pos)
-        self.update_highscores()
 
         while paused:
             for event in pg.event.get():
@@ -392,7 +395,7 @@ class Snake():
         self.center_msg_to_screen("Main menu", self.text_color_normal, 100, size="med", show_indicator=ind_pos==1)
         self.center_msg_to_screen("Quit", self.text_color_normal, 150, size="med", show_indicator=ind_pos==2)
         pg.display.update()
-    
+
     def game_over_menu(self):
         indicator_pos = 0
         number_of_entries = 2 # number of menu entries - 1
@@ -440,73 +443,55 @@ class Snake():
             self.dark_mode = False
             self.background_color = WHITE
             self.text_color_normal = BLACK
-            
-    def rand_apple_gen(self):
+
+    def generate_apple(self):
         # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
         # [display_width, display_height, block_size, block_size], which would appear offscreen
-        rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-        rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-        # Disallow apple to spawn under snake, modulo operator for when snake is past screen boundaries
-        mod_list = [[x % DISPLAY_WIDTH, y % DISPLAY_HEIGHT] for [x,y] in self.snake_list]
-        while [rand_apple_x, rand_apple_y] in mod_list:
-            rand_apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-            rand_apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-        return rand_apple_x, rand_apple_y
+        self.apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+        self.apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+        # Disallow apple to spawn under snake
+        # TODO: remove checklist and check immediately in self.snake_list using some kind of dont-care operator?
+        # like while [apple_x, apple_y, _] in self.snakelist
+		# https://stackoverflow.com/questions/53488787/is-there-a-dont-care-value-for-lists-in-python/53488822
+        checklist = [segment[:2] for segment in self.snake_list]
+        while [self.apple_x, self.apple_y] in checklist:
+            self.apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+            self.apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
 
     def draw_snake(self):
+        # TODO: code snake to appear fully on game start instead of being generated from the spawning point
+
         draw_tail = 0 # used in list slicing to determine whether or not to draw the tail without raising index errors
-        
-        # TODO: If tail calculations cannot be simplified, move them to seperate function
-        if len(self.snake_list) > 1: # TODO: code snake to appear fully on game start instead of being generated from the spawning point
-                                     # This would remove the need for checking if len(snake_list) > 1
-                                     # Currently snake_list is always > 1, except for the very first frame of the game
-            draw_tail = 1
-            tail_x, tail_y = self.snake_list[0][0], self.snake_list[0][1]
-            pretail_x, pretail_y = self.snake_list[1][0], self.snake_list[1][1]
-            if pretail_x < tail_x:
-                # pretail_x is less than tail_x, so the snake is moving left
-                # Exception: When self.boundaries == False AND we're moving right AND pretail has just appeared
-                # on the far left of the screen. In that case we still want the tail to be pictured as heading right
-                # Similar logic applies for the other directions
-                if not self.boundaries and pretail_x >= DISPLAY_WIDTH and pretail_x % DISPLAY_WIDTH == 0:
-                    tail = self.rotate(self.tail_img, 270)
+        for idx, segment in enumerate(self.snake_list[draw_tail:-1]): # the last element is the head, so dont put a square there
+            if idx == 0:
+                body = self.rotate(self.tail_img, self.snake_list[idx+1][2])
+            else:
+                # currently fails when moving up and turning right, and when moving right and turning up
+                # needs respectively extra 270 and 90 degree turns
+                # movign up, then right: current segment rotation == 0, next == 270
+                # moving right then up: current segment rotaion == 270, then 0
+                if segment[2] != self.snake_list[idx+1][2]:
+                    # First two conditional statements are filthy hardcoding
+                    if self.snake_list[idx+1][2] == 0 and segment[2] == 270:
+                        body = self.body_turn_img
+                    elif self.snake_list[idx+1][2] == 270 and segment[2] == 0:
+                        body = self.rotate(self.body_turn_img, 180)
+                    # This is actual calculation
+                    # TODO: remove the hardcoded checking for right-then-up and up-then-right movement
+                    elif self.snake_list[idx+1][2] > segment[2]:
+                        body = self.rotate(self.body_turn_img, self.snake_list[idx+1][2])
+                    elif self.snake_list[idx+1][2] < segment[2]:
+                        body = self.rotate(self.body_turn_img, (self.snake_list[idx+1][2] + 270) % 360)
                 else:
-                    tail = self.rotate(self.tail_img, 90)
-            elif pretail_y > tail_y: # y greater, going down
-                if not self.boundaries and pretail_y < 0 and pretail_y % DISPLAY_HEIGHT == DISPLAY_HEIGHT:# - BLOCK_SIZE:
-                    tail = self.tail_img
-                else:
-                    tail = self.rotate(self.tail_img, 180)
-            elif pretail_x > tail_x: # x greater, going right
-                if not self.boundaries and pretail_x < 0 and pretail_x % 480 == DISPLAY_WIDTH:# - BLOCK_SIZE:
-                    tail = self.rotate(self.tail_img, 90)
-                else:
-                    tail = self.rotate(self.tail_img, 270)
-            elif pretail_y < tail_y: # y less, going up
-                if not self.boundaries and pretail_y >= DISPLAY_HEIGHT and pretail_y % DISPLAY_HEIGHT == 0:
-                    tail = self.rotate(self.tail_img, 180)
-                else:
-                    tail = self.tail_img
-
-            self.program_surface.blit(tail, (tail_x % DISPLAY_WIDTH, tail_y % DISPLAY_HEIGHT))
-        
-        # TODO: Add extra segment images for the body and when we turn a corner
-        # TODO: For corner image, check coords before and after current segment to see which way to rotate the image
-
-        # Modulo divisor (%) in coords for when self.boundaries == False
-        for x_and_y in self.snake_list[draw_tail:-1]: # the last element is the head, so dont put a square there
-            pg.draw.rect(self.program_surface, self.snake_color,
-                    [x_and_y[0] % DISPLAY_WIDTH, x_and_y[1] % DISPLAY_HEIGHT, BLOCK_SIZE,BLOCK_SIZE]) # parameters: surface, color, [x,y,width,height]
+                    body = self.rotate(self.body_img, self.snake_list[idx+1][2])
+            self.program_surface.blit(body, (segment[0], segment[1]))
         
         # blit the snake head image last, so it still shows after self-collision
-        # check for game_over to not print the head on the other side of the screen after wall collision
-        # TODO: Fix bug where now it also doesn't print head on self collision
-        if not self.game_over:
-            self.program_surface.blit(self.head, (self.snake_list[-1][0] % DISPLAY_WIDTH, self.snake_list[-1][1] % DISPLAY_HEIGHT))
+        self.program_surface.blit(self.head, (self.snake_list[-1][0], self.snake_list[-1][1]))
     
     def draw_in_game_screen(self):
         self.program_surface.fill(self.background_color)
-        self.program_surface.blit(self.apple_img, (self.rand_apple_x, self.rand_apple_y))
+        self.program_surface.blit(self.apple_img, (self.apple_x, self.apple_y))
         self.draw_score()
         self.draw_snake()
 
@@ -551,19 +536,21 @@ class Snake():
             self.lead_y += self.lead_y_change
 
             # Add boundaries to the game. If x or y is outside the game window, game over
-            if self.boundaries and (self.lead_x >= DISPLAY_WIDTH or self.lead_x < 0 or self.lead_y >= DISPLAY_HEIGHT or self.lead_y < 0):
-                self.game_over = True
-                # elif not self.boundaries:
-                #     if self.lead_x >= DISPLAY_WIDTH:
-                #         self.lead_x = 0
-                #     elif self.lead_x < 0:
-                #         self.lead_x = DISPLAY_WIDTH - BLOCK_SIZE
-                #     elif self.lead_y >= DISPLAY_HEIGHT:
-                #         self.lead_y = 0
-                #     elif self.lead_y < 0:
-                #         self.lead_y = DISPLAY_HEIGHT-BLOCK_SIZE
+            if self.lead_x >= DISPLAY_WIDTH or self.lead_x < 0 or self.lead_y >= DISPLAY_HEIGHT or self.lead_y < 0:
+                if self.boundaries:
+                    self.game_over = True
+                elif not self.boundaries:
+                    if self.lead_x >= DISPLAY_WIDTH:
+                        self.lead_x = 0
+                    elif self.lead_x < 0:
+                        self.lead_x = DISPLAY_WIDTH - BLOCK_SIZE
+                    elif self.lead_y >= DISPLAY_HEIGHT:
+                        self.lead_y = 0
+                    elif self.lead_y < 0:
+                        self.lead_y = DISPLAY_HEIGHT-BLOCK_SIZE
             
-            self.snake_list.append([self.lead_x, self.lead_y])
+            snake_head = [self.lead_x, self.lead_y, self.head_rotation]
+            self.snake_list.append(snake_head)
             
             # TODO: check if this is needed after fixing other issue where tail is only drawn on second clocktick.
             # Suspect that the if-statement can then be removed, leaving just del statement
@@ -571,23 +558,22 @@ class Snake():
                 del self.snake_list[0] # remove the first (oldest) element of the list
             
             # If the head overlaps with any other segment of the snake, game over
-            for [x,y] in self.snake_list[:-1]:
-                if [x % DISPLAY_WIDTH, y % DISPLAY_HEIGHT] == [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT]:
+            for segment in self.snake_list[:-1]:
+                if segment[:2] == snake_head[:2]:
                     self.game_over = True
             
             self.draw_in_game_screen()
 
             # Collision checking for grid-based and same-size apple/snake
-            # Modulo divisor (%) for when boundaries are disabled
-            if [self.lead_x % DISPLAY_WIDTH, self.lead_y % DISPLAY_HEIGHT] == [self.rand_apple_x, self.rand_apple_y]:
-                self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+            if snake_head[:2] == [self.apple_x, self.apple_y]:
+                self.generate_apple()
                 self.snake_length += 1
                 self.current_score += 1
 
             # Non grid-based collision checking for any size snake/apple
-            # if (self.lead_x + BLOCK_SIZE > self.rand_apple_x and self.lead_y + BLOCK_SIZE > self.rand_apple_y
-            #     and self.lead_x < self.rand_apple_x + BLOCK_SIZE and self.lead_y < self.rand_apple_y + BLOCK_SIZE):
-            #     self.rand_apple_x, self.rand_apple_y = self.rand_apple_gen()
+            # if (self.lead_x + BLOCK_SIZE > self.apple_x and self.lead_y + BLOCK_SIZE > self.apple_y
+            #     and self.lead_x < self.apple_x + BLOCK_SIZE and self.lead_y < self.apple_y + BLOCK_SIZE):
+            #     self.generate_apple()
             #     self.snake_length += 1
             #     self.score += 1
 
@@ -607,25 +593,29 @@ class Snake():
                         self.lead_x_change = -BLOCK_SIZE
                         self.lead_y_change = 0
                         # Rotate head to face the right way
-                        self.head = self.rotate(self.head_img, 90)
+                        self.head_rotation = 90
+                        self.head = self.rotate(self.head_img, self.head_rotation)
                     elif event.key == pg.K_RIGHT:
                         if self.lead_x_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_x_change = BLOCK_SIZE
                         self.lead_y_change = 0
-                        self.head = self.rotate(self.head_img, 270)
+                        self.head_rotation = 270
+                        self.head = self.rotate(self.head_img, self.head_rotation)
                     elif event.key == pg.K_UP:
                         if self.lead_y_change == BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = -BLOCK_SIZE
                         self.lead_x_change = 0
+                        self.head_rotation = 0
                         self.head = self.head_img
                     elif event.key == pg.K_DOWN:
                         if self.lead_y_change == -BLOCK_SIZE: # disallow running into self
                             break
                         self.lead_y_change = BLOCK_SIZE
                         self.lead_x_change = 0
-                        self.head = self.rotate(self.head_img, 180)
+                        self.head_rotation = 180
+                        self.head = self.rotate(self.head_img, self.head_rotation)
                     elif event.key == pg.K_p:
                         self.pause_menu()
                 elif event.type == pg.QUIT:
