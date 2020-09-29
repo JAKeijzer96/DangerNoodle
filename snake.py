@@ -42,11 +42,11 @@ class Snake():
         # Load images
         try:
             self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
-            self.head_img = pg.image.load("snakehead.png") # block_size x block_size pixels
             self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
-            self.tail_img = pg.image.load("snaketail.png") # block_size x block_size pixels
+            self.head_img = pg.image.load("head.png") # block_size x block_size pixels
+            self.tail_img = pg.image.load("tail.png") # block_size x block_size pixels
             self.body_img = pg.image.load("body.png")
-            self.body_turn_img = pg.image.load("bodyturn.png")
+            self.turn_img = pg.image.load("turn.png")
         except pg.error as e:
             print(f"Error: One or more sprites could not be located\n{e}")
             print("Shutting down")
@@ -90,8 +90,6 @@ class Snake():
         pg.display.set_icon(self.icon)
         # Initialize clock object to tick every FPS times per second
         self.clock = pg.time.Clock() # pg clock object used to set fps
-
-
         # Call function to reset in-game variables, in this case initializing them
         self.reset_game_variables()
         
@@ -122,7 +120,7 @@ class Snake():
 
     def draw_main_menu(self, ind_pos):
         self.program_surface.fill(self.background_color)
-        self.center_msg_to_screen("Welcome to Slither", self.snake_color, -100, "large")
+        self.center_msg_to_screen("DangerNoodle", self.snake_color, -100, "large")
         self.center_msg_to_screen("Play", self.text_color_normal, 0, "med", show_indicator=ind_pos==0)
         self.center_msg_to_screen("Help", self.text_color_normal, 40, "med", show_indicator=ind_pos==1)
         self.center_msg_to_screen("High-scores", self.text_color_normal, 80, "med", show_indicator=ind_pos==2)
@@ -172,7 +170,6 @@ class Snake():
             # Could remove clock.tick() entirely in menus, but that would cause the while
             # loop to run as fast as it can, demanding a lot of unnecessary resources
             self.clock.tick(MENU_FPS)
-            
 
     def draw_settings_menu(self, ind_pos):
         # Set the correct colors for whether or not dark mode/edges are enabled/disabled
@@ -250,7 +247,7 @@ class Snake():
                     self.shutdown()
             
             self.clock.tick(MENU_FPS)
-    
+
     def draw_help_menu(self):
         # TODO: Move all (sub)menus up a bit? But stay consistent
         self.program_surface.fill(self.background_color)
@@ -275,7 +272,7 @@ class Snake():
                 elif event.type == pg.QUIT:
                     self.shutdown()
             self.clock.tick(MENU_FPS)
-    
+
     def draw_highscore_menu(self):
         self.program_surface.fill(self.background_color)
         self.center_msg_to_screen("High-scores", self.text_color_normal, -100, "large")
@@ -311,7 +308,7 @@ class Snake():
         else:
             self.highscores.append( ("", self.current_score) )
             self.highscores.sort(reverse=True) # Is this possible for the desired data structure?
-    
+
     def draw_highscore_name_input(self, string):
         self.draw_in_game_screen()
         # Make textbox, user input, keep updating when user enters text
@@ -348,7 +345,7 @@ class Snake():
             
             self.clock.tick(MENU_FPS)
         return user_string
-    
+
     def draw_pause_menu(self, ind_pos):
         # Re-draw the background images to create a transparent pause menu
         self.draw_in_game_screen()
@@ -478,22 +475,22 @@ class Snake():
                 if segment[2] != self.snake_list[idx+1][2]:
                     # First two conditional statements are filthy hardcoding
                     if self.snake_list[idx+1][2] == 0 and segment[2] == 270:
-                        body = self.body_turn_img
+                        body = self.turn_img
                     elif self.snake_list[idx+1][2] == 270 and segment[2] == 0:
-                        body = self.rotate(self.body_turn_img, 180)
+                        body = self.rotate(self.turn_img, 180)
                     # This is actual calculation
                     # TODO: remove the hardcoded checking for right-then-up and up-then-right movement
                     elif self.snake_list[idx+1][2] > segment[2]:
-                        body = self.rotate(self.body_turn_img, self.snake_list[idx+1][2])
+                        body = self.rotate(self.turn_img, self.snake_list[idx+1][2])
                     elif self.snake_list[idx+1][2] < segment[2]:
-                        body = self.rotate(self.body_turn_img, (self.snake_list[idx+1][2] + 270) % 360)
+                        body = self.rotate(self.turn_img, (self.snake_list[idx+1][2] + 270) % 360)
                 else:
                     body = self.rotate(self.body_img, self.snake_list[idx+1][2])
             self.program_surface.blit(body, (segment[0], segment[1]))
         
         # blit the snake head image last, so it still shows after self-collision
         self.program_surface.blit(self.head, (self.snake_list[-1][0], self.snake_list[-1][1]))
-    
+
     def draw_in_game_screen(self):
         self.program_surface.fill(self.background_color)
         self.program_surface.blit(self.apple_img, (self.apple_x, self.apple_y))
@@ -502,7 +499,7 @@ class Snake():
 
     def rotate(self, img, degrees):
         return pg.transform.rotate(img, degrees)
-    
+
     def text_objects(self, text, color, size):
         if size == "small":
             text_surface = self.smallfont.render(text, True, color) # render message, True (for anti-aliasing), color
