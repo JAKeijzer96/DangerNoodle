@@ -21,36 +21,18 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 SNAKE_GREEN = (0, 155, 0) # Not bright green
 FONT = "./Gasalt-Black.ttf"
+# Brown hex: 8c4614
 
 DISPLAY_WIDTH = 800
 DISPLAY_HEIGHT = 600
 
 
-GAME_FPS = 15 # TODO: Find optimal fps with possibly lower x,y increments per clock tick.
-         # increments depend on but are not equal to block_size. if they were this could mess up the grid system
-         # check for first upcoming multiple of block_size, then turn?
-MENU_FPS = 15
-BLOCK_SIZE = 20
-
 # TODO: Add different maps with obstacles?
 # TODO: Add different map sizes? small, medium, large
 # TODO: Resizeable game window? Need to think about desired behaviour of program_surface
-# TODO: bugfix not printing head on self collision
 
 class Snake():
     def __init__(self):
-        # Load images
-        try:
-            self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
-            self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
-            self.head_img = pg.image.load("head.png") # block_size x block_size pixels
-            self.tail_img = pg.image.load("tail.png") # block_size x block_size pixels
-            self.body_img = pg.image.load("body.png")
-            self.turn_img = pg.image.load("turn.png")
-        except pg.error as e:
-            print(f"Error: One or more sprites could not be located\n{e}")
-            print("Shutting down")
-            self.shutdown()
         # Initialize fonts
         try:
             self.smallfont = pg.font.Font(FONT, 30)
@@ -61,12 +43,18 @@ class Snake():
             self.smallfont = pg.font.SysFont(None, 30, bold=1)
             self.medfont = pg.font.SysFont(None, 40, bold=1)
             self.largefont = pg.font.SysFont(None, 80, bold=1)
-        # Initialize colors, changeable in settings menu
+        # Initialize colors
         self.background_color = WHITE
         self.text_color_normal = BLACK
         self.text_color_emphasis_bad = RED
         self.text_color_emphasis_good = GREEN
         self.snake_color = SNAKE_GREEN
+        # Initialize blocksize and fps
+        self.block_size = 20
+        self.game_fps = 15# TODO: Find optimal fps with possibly lower x,y increments per clock tick.
+         # increments depend on but are not equal to block_size. if they were this could mess up the grid system
+         # check for first upcoming multiple of block_size, then turn?
+        self.menu_fps = 15
         # Initialize highscores
         try:
             with open("highscores.pickle", "rb") as file:
@@ -84,6 +72,18 @@ class Snake():
         except:
             self.boundaries = True
             self.dark_mode = False
+        # Load images
+        try:
+            self.icon = pg.image.load("icon.png") # icon should be a 32x32 file
+            self.apple_img = pg.image.load("apple.png") # block_size x block_size pixels
+            self.head_img = pg.image.load("head.png") # block_size x block_size pixels
+            self.tail_img = pg.image.load("tail.png") # block_size x block_size pixels
+            self.body_img = pg.image.load("body.png")
+            self.turn_img = pg.image.load("turn.png")
+        except pg.error as e:
+            print(f"Error: One or more sprites could not be located\n{e}")
+            print("Shutting down")
+            self.shutdown()
         # Initialize main program surface
         self.program_surface = pg.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT)) # returns a surface object with (w,h) wxh pixels
         pg.display.set_caption("DangerNoodle - A very original game by Jasper")
@@ -101,7 +101,7 @@ class Snake():
         self.lead_x = DISPLAY_WIDTH//2 # x-location of head, initially center of screen
         self.lead_y = DISPLAY_HEIGHT//2 # y-ocation of head, initially center of screen
         self.lead_x_change = 0 # Change in lead_x location every clock tick
-        self.lead_y_change = BLOCK_SIZE # change in lead_y location every clock tick, initially snake moves down
+        self.lead_y_change = self.block_size # change in lead_y location every clock tick, initially snake moves down
         self.snake_list = [] # list of all squares currently occupied by the snake
         self.snake_length = 2 # max allowed length of the snake
         self.current_score = self.snake_length - 2 # score == current length - base length
@@ -169,7 +169,7 @@ class Snake():
             # no need for high fps, just dont make the delay on keydown too long
             # Could remove clock.tick() entirely in menus, but that would cause the while
             # loop to run as fast as it can, demanding a lot of unnecessary resources
-            self.clock.tick(MENU_FPS)
+            self.clock.tick(self.menu_fps)
 
     def draw_settings_menu(self, ind_pos):
         # Set the correct colors for whether or not dark mode/edges are enabled/disabled
@@ -246,18 +246,19 @@ class Snake():
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
-            self.clock.tick(MENU_FPS)
+            self.clock.tick(self.menu_fps)
 
     def draw_help_menu(self):
         # TODO: Move all (sub)menus up a bit? But stay consistent
         self.program_surface.fill(self.background_color)
-        self.center_msg_to_screen("Help", self.text_color_normal, -100, "large")
-        self.center_msg_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, 30 )
-        self.center_msg_to_screen("the game is to eat as many apples as possible, without running", self.text_color_normal, 60)
-        self.center_msg_to_screen("into yourself or the walls. Your size increases with every", self.text_color_normal, 90)
-        self.center_msg_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, 120)
-        self.center_msg_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 150)
-        self.center_msg_to_screen("Good luck!", self.text_color_normal, 180)
+        self.center_msg_to_screen("Help", self.text_color_normal, -200, "large")
+        self.center_msg_to_screen("You are a hungry snake, looking for food. The objective of", self.text_color_normal, -100 )
+        self.center_msg_to_screen("the game is to eat as many apples as possible, without running", self.text_color_normal, -70)
+        self.center_msg_to_screen("into yourself or the walls. Your size increases with every", self.text_color_normal, -40)
+        self.center_msg_to_screen("apple you eat. If you run into yourself or the edges, you die.", self.text_color_normal, -10)
+        self.center_msg_to_screen("Control the snake using the arrow keys.", self.text_color_normal, 50)
+        self.center_msg_to_screen("Pause the game by pressing P or Esc", self.text_color_normal, 80)
+        self.center_msg_to_screen("Good luck!", self.text_color_normal, 140)
         self.center_msg_to_screen("Back", self.text_color_normal, 250, "med", show_indicator=True)
         pg.display.update()
 
@@ -271,7 +272,7 @@ class Snake():
                         in_submenu = False
                 elif event.type == pg.QUIT:
                     self.shutdown()
-            self.clock.tick(MENU_FPS)
+            self.clock.tick(self.menu_fps)
 
     def draw_highscore_menu(self):
         self.program_surface.fill(self.background_color)
@@ -293,7 +294,7 @@ class Snake():
                         in_submenu = False
                 elif event.type == pg.QUIT:
                     self.shutdown()
-            self.clock.tick(MENU_FPS)
+            self.clock.tick(self.menu_fps)
 
     def update_highscores(self):
         # Max amount of highscores is currently 5
@@ -343,7 +344,7 @@ class Snake():
                 elif event.type == pg.QUIT:
                     self.shutdown()
             
-            self.clock.tick(MENU_FPS)
+            self.clock.tick(self.menu_fps)
         return user_string
 
     def draw_pause_menu(self, ind_pos):
@@ -384,9 +385,12 @@ class Snake():
                         if indicator_pos < 0:
                             indicator_pos = number_of_entries
                         self.draw_pause_menu(indicator_pos)
+                    # Also allow closing the pause menu with the P and Esc keys
+                    elif event.key == pg.K_p or event.key == pg.K_ESCAPE:
+                        paused = False
                 elif event.type == pg.QUIT:
                     self.shutdown()
-            self.clock.tick(MENU_FPS) # dont need high fps
+            self.clock.tick(self.menu_fps) # dont need high fps
 
     def draw_game_over_menu(self, ind_pos):
         # Re-draw the background images to create a transparent game over menu
@@ -449,16 +453,16 @@ class Snake():
     def generate_apple(self):
         # randint(0,display_width) could return display_width, meaning we would get an apple with coordinates
         # [display_width, display_height, block_size, block_size], which would appear offscreen
-        self.apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-        self.apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+        self.apple_x = round(randint(0, DISPLAY_WIDTH - self.block_size)  / self.block_size) * self.block_size # round to nearest block_size
+        self.apple_y = round(randint(0, DISPLAY_HEIGHT - self.block_size) / self.block_size) * self.block_size # round to nearest block_size
         # Disallow apple to spawn under snake
         # TODO: remove checklist and check immediately in self.snake_list using some kind of dont-care operator?
         # like while [apple_x, apple_y, _] in self.snakelist
 		# https://stackoverflow.com/questions/53488787/is-there-a-dont-care-value-for-lists-in-python/53488822
         checklist = [segment[:2] for segment in self.snake_list]
         while [self.apple_x, self.apple_y] in checklist:
-            self.apple_x = round(randint(0, DISPLAY_WIDTH - BLOCK_SIZE)  / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
-            self.apple_y = round(randint(0, DISPLAY_HEIGHT - BLOCK_SIZE) / BLOCK_SIZE) * BLOCK_SIZE # round to nearest block_size
+            self.apple_x = round(randint(0, DISPLAY_WIDTH - self.block_size)  / self.block_size) * self.block_size # round to nearest block_size
+            self.apple_y = round(randint(0, DISPLAY_HEIGHT - self.block_size) / self.block_size) * self.block_size # round to nearest block_size
 
     def draw_snake(self):
         # TODO: code snake to appear fully on game start instead of being generated from the spawning point
@@ -545,11 +549,11 @@ class Snake():
                     if self.lead_x >= DISPLAY_WIDTH:
                         self.lead_x = 0
                     elif self.lead_x < 0:
-                        self.lead_x = DISPLAY_WIDTH - BLOCK_SIZE
+                        self.lead_x = DISPLAY_WIDTH - self.block_size
                     elif self.lead_y >= DISPLAY_HEIGHT:
                         self.lead_y = 0
                     elif self.lead_y < 0:
-                        self.lead_y = DISPLAY_HEIGHT-BLOCK_SIZE
+                        self.lead_y = DISPLAY_HEIGHT-self.block_size
             
             snake_head = [self.lead_x, self.lead_y, self.head_rotation]
             self.snake_list.append(snake_head)
@@ -573,14 +577,14 @@ class Snake():
                 self.current_score += 1
 
             # Non grid-based collision checking for any size snake/apple
-            # if (self.lead_x + BLOCK_SIZE > self.apple_x and self.lead_y + BLOCK_SIZE > self.apple_y
-            #     and self.lead_x < self.apple_x + BLOCK_SIZE and self.lead_y < self.apple_y + BLOCK_SIZE):
+            # if (self.lead_x + self.block_size > self.apple_x and self.lead_y + self.block_size > self.apple_y
+            #     and self.lead_x < self.apple_x + self.block_size and self.lead_y < self.apple_y + self.block_size):
             #     self.generate_apple()
             #     self.snake_length += 1
             #     self.score += 1
 
             pg.display.update() # update the display
-            self.clock.tick(GAME_FPS) # tick(x) for a game of x frames per second, put this after display.update()
+            self.clock.tick(self.game_fps) # tick(x) for a game of x frames per second, put this after display.update()
 
             if self.game_over:  
                 self.game_over_menu()
@@ -590,35 +594,35 @@ class Snake():
                     if event.key == pg.K_LEFT:
                         # If moving right, don't allow the user to move left, instead 
                         # break out of loop and get next event
-                        if self.lead_x_change == BLOCK_SIZE:
+                        if self.lead_x_change == self.block_size:
                             break
-                        self.lead_x_change = -BLOCK_SIZE
+                        self.lead_x_change = -self.block_size
                         self.lead_y_change = 0
                         # Rotate head to face the right way
                         self.head_rotation = 90
                         self.head = self.rotate(self.head_img, self.head_rotation)
                     elif event.key == pg.K_RIGHT:
-                        if self.lead_x_change == -BLOCK_SIZE: # disallow running into self
+                        if self.lead_x_change == -self.block_size: # disallow running into self
                             break
-                        self.lead_x_change = BLOCK_SIZE
+                        self.lead_x_change = self.block_size
                         self.lead_y_change = 0
                         self.head_rotation = 270
                         self.head = self.rotate(self.head_img, self.head_rotation)
                     elif event.key == pg.K_UP:
-                        if self.lead_y_change == BLOCK_SIZE: # disallow running into self
+                        if self.lead_y_change == self.block_size: # disallow running into self
                             break
-                        self.lead_y_change = -BLOCK_SIZE
+                        self.lead_y_change = -self.block_size
                         self.lead_x_change = 0
                         self.head_rotation = 0
                         self.head = self.head_img
                     elif event.key == pg.K_DOWN:
-                        if self.lead_y_change == -BLOCK_SIZE: # disallow running into self
+                        if self.lead_y_change == -self.block_size: # disallow running into self
                             break
-                        self.lead_y_change = BLOCK_SIZE
+                        self.lead_y_change = self.block_size
                         self.lead_x_change = 0
                         self.head_rotation = 180
                         self.head = self.rotate(self.head_img, self.head_rotation)
-                    elif event.key == pg.K_p:
+                    elif event.key == pg.K_p or event.key == pg.K_ESCAPE:
                         self.pause_menu()
                 elif event.type == pg.QUIT:
                     self.shutdown()
