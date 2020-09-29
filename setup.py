@@ -6,7 +6,7 @@ import cx_Freeze
 # The alternative also builds an installer instead of just a folder with the .exe
 
 
-execs = [cx_Freeze.Executable("snake.py", base="Win32GUI")] # base= to not have a terminal appear
+execs = [cx_Freeze.Executable("dangernoodle.py", base="Win32GUI")] # base= to not have a terminal appear
 files = ["apple.png", "body.png", "Gasalt-Black.ttf", "head.png", "icon.png", "tail.png", "turn.png"]
 
 # exclude unneeded packages to trim down file size

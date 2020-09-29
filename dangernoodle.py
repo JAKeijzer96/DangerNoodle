@@ -1,4 +1,10 @@
 """
+29-09-2020
+DangerNoodle - A very original game by Jasper
+Inspired by The New Boston pygame tutorial, link to playlist below:
+https://www.youtube.com/playlist?list=PL6gx4Cwl9DGAjkwJocj7vlc_mFU-4wXJq
+
+
 TODO (init, draw_snake, game_loop, generate_apple functions):
 Find method to get high fps with possibly lower x,y increments per clock tick.
 Increments depend on but are not equal to block_size. if they were this could mess up the grid system
